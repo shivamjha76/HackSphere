@@ -7,7 +7,8 @@ from app.models import Hackathon, User
 from app.schemas.hackathon import (
     HackathonCreate,
     HackathonUpdate,
-    HackathonResponse
+    HackathonResponse,
+    HackathonStatusUpdate
 )
 
 
@@ -56,6 +57,27 @@ def get_hackathon(
 
     return hackathon
 
+
+@router.get("/", response_model=list[HackathonResponse])
+def get_hackathons(
+    skip: int = 0,
+    limit: int = 10,
+    status: str | None = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(Hackathon)
+
+    if status:
+        query = query.filter(Hackathon.status == status)
+
+    return (
+        query
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
 from app.core.hackathon_permissions import get_owned_hackathon
 @router.put("/{hackathon_id}", response_model=HackathonResponse)
 def update_hackathon(
@@ -86,3 +108,37 @@ def delete_hackathon(
     db.commit()
 
     return None
+
+@router.patch("/{hackathon_id}/status", response_model=HackathonResponse)
+def update_hackathon_status(
+    status_data: HackathonStatusUpdate,
+    hackathon: Hackathon = Depends(get_owned_hackathon),
+    current_user: User = Depends(require_role("organizer")),
+    db: Session = Depends(get_db)
+):
+    current_status = hackathon.status
+    new_status = status_data.status
+
+    allowed_transitions = {
+        "draft": ["published", "cancelled"],
+        "published": ["registration_closed", "cancelled"],
+        "registration_closed": ["ongoing", "cancelled"],
+        "ongoing": ["completed"],
+        "completed": [],
+        "cancelled": []
+    }
+
+    if new_status not in allowed_transitions.get(current_status, []):
+        from fastapi import HTTPException
+
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot change status from '{current_status}' to '{new_status}'"
+        )
+
+    hackathon.status = new_status
+
+    db.commit()
+    db.refresh(hackathon)
+
+    return hackathon

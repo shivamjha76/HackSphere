@@ -2,6 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from typing import Literal
 
 class HackathonCreate(BaseModel):
     title: str
@@ -34,3 +35,13 @@ class HackathonUpdate(BaseModel):
     registration_end: datetime
     hackathon_start: datetime
     hackathon_end: datetime
+    
+
+class HackathonStatusUpdate(BaseModel):
+    status: Literal[
+        "published",
+        "registration_closed",
+        "ongoing",
+        "completed",
+        "cancelled"
+    ]
