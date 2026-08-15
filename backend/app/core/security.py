@@ -18,7 +18,6 @@ pwd_context = CryptContext(
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
-
 def verify_password(password: str, hashed_password: str) -> bool:
     return pwd_context.verify(password, hashed_password)
 
@@ -34,7 +33,7 @@ def create_access_token(data: dict, expires_minutes: int = 30):
         algorithm=JWT_ALGORITHM
     )
     
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/users/login")    
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")  
 def verify_access_token(token: str):
     try:
         payload = jwt.decode(
