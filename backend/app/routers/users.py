@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
 from app.core.database import get_db
 from app.models import User
-
+from typing import Literal
 from app.core.security import (
     hash_password,
     verify_password,
@@ -33,6 +33,36 @@ class UserUpdate(BaseModel):
     name: str
     email: str
     
+class RoleUpdate(BaseModel):
+    role: str
+    
+    class RoleUpdate(BaseModel):
+     role: Literal["participant", "organizer", "super_admin"]
+     
+@router.patch("/{user_id}/role")
+def update_user_role(
+    user_id: int,
+    role_data: RoleUpdate,
+    current_user: User = Depends(require_role("super_admin")),
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
+    user.role = role_data.role
+    db.commit()
+    db.refresh(user)
+
+    return {
+        "message": "User role updated successfully",
+        "user_id": user.id,
+        "role": user.role
+    }   
 class UserResponse(BaseModel):
     id: int
     name: str
