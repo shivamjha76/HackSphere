@@ -1,10 +1,12 @@
 from fastapi import FastAPI 
 from app.routers import users
 from app.routers import auth
+from app.routers import hackathons
 
 app = FastAPI(title="HackSphere API")
 app.include_router(users.router)
 app.include_router(auth.router)
+app.include_router(hackathons.router)
 
 @app.get("/")
 def root():
