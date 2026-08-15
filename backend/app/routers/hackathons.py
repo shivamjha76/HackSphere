@@ -40,6 +40,23 @@ def create_hackathon(
 
     return hackathon
 
+
+@router.get(
+    "/my",
+    response_model=list[HackathonResponse]
+)
+def get_my_hackathons(
+    current_user: User = Depends(require_role("organizer")),
+    db: Session = Depends(get_db)
+):
+    return (
+        db.query(Hackathon)
+        .filter(Hackathon.organizer_id == current_user.id)
+        .order_by(Hackathon.created_at.desc())
+        .all()
+    )
+    
+
 @router.get("/{hackathon_id}", response_model=HackathonResponse)
 def get_hackathon(
     hackathon_id: int,
@@ -87,6 +104,8 @@ def get_hackathons(
 
 
 from app.core.hackathon_permissions import get_owned_hackathon
+
+
 @router.put("/{hackathon_id}", response_model=HackathonResponse)
 def update_hackathon(
     hackathon_data: HackathonUpdate,
@@ -106,6 +125,7 @@ def update_hackathon(
 
     return hackathon
 
+
 @router.delete("/{hackathon_id}", status_code=204)
 def delete_hackathon(
     hackathon: Hackathon = Depends(get_owned_hackathon),
@@ -116,6 +136,7 @@ def delete_hackathon(
     db.commit()
 
     return None
+
 
 @router.patch("/{hackathon_id}/status", response_model=HackathonResponse)
 def update_hackathon_status(
