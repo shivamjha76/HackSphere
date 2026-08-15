@@ -92,3 +92,44 @@ def get_my_registration(
         )
 
     return registration
+
+@router.delete(
+    "/{hackathon_id}/registration",
+    status_code=204
+)
+def cancel_registration(
+    hackathon_id: int,
+    current_user: User = Depends(require_role("participant")),
+    db: Session = Depends(get_db)
+):
+    registration = db.query(Registration).filter(
+        Registration.hackathon_id == hackathon_id,
+        Registration.participant_id == current_user.id
+    ).first()
+
+    if not registration:
+        raise HTTPException(
+            status_code=404,
+            detail="Registration not found"
+        )
+
+    hackathon = db.query(Hackathon).filter(
+        Hackathon.id == hackathon_id
+    ).first()
+
+    if not hackathon:
+        raise HTTPException(
+            status_code=404,
+            detail="Hackathon not found"
+        )
+
+    if hackathon.status != "published":
+        raise HTTPException(
+            status_code=400,
+            detail="Registration cannot be cancelled at this stage"
+        )
+
+    db.delete(registration)
+    db.commit()
+
+    return None
