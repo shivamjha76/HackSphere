@@ -9,7 +9,8 @@ from app.core.security import (
     hash_password,
     verify_password,
     create_access_token,
-    get_current_user_id
+    get_current_user_id,
+    require_role
 )
 
 
@@ -36,6 +37,7 @@ class UserResponse(BaseModel):
     id: int
     name: str
     email: str
+    role: str
 
     class Config:
         from_attributes = True
@@ -64,6 +66,7 @@ def get_my_profile(
         "name": user.name,
         "email": user.email
     }
+    
 
 @router.get("/{user_id}", response_model=UserResponse)
 def get_user(user_id: int, db: Session = Depends(get_db)):

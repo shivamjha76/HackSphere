@@ -3,6 +3,10 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 from jose import jwt
 from app.core.config import JWT_SECRET_KEY, JWT_ALGORITHM
+from sqlalchemy.orm import Session
+
+from app.core.database import get_db
+from app.models import User
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 pwd_context = CryptContext(
@@ -61,3 +65,31 @@ def get_current_user_id(
         )
 
     return int(user_id)
+
+def get_current_user(
+    user_id: int = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
+    return user
+
+def require_role(required_role: str):
+    def role_checker(
+        current_user: User = Depends(get_current_user)
+    ):
+        if current_user.role != required_role:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to access this resource"
+            )
+
+        return current_user
+
+    return role_checker
