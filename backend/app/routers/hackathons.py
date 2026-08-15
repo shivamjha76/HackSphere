@@ -62,16 +62,24 @@ def get_hackathon(
 def get_hackathons(
     skip: int = 0,
     limit: int = 10,
-    status: str | None = None,
+    search: str | None = None,
     db: Session = Depends(get_db)
 ):
-    query = db.query(Hackathon)
+    query = db.query(Hackathon).filter(
+        Hackathon.status == "published"
+    )
 
-    if status:
-        query = query.filter(Hackathon.status == status)
+    if search:
+        search_term = f"%{search}%"
+
+        query = query.filter(
+            Hackathon.title.ilike(search_term)
+            | Hackathon.description.ilike(search_term)
+        )
 
     return (
         query
+        .order_by(Hackathon.created_at.desc())
         .offset(skip)
         .limit(limit)
         .all()
