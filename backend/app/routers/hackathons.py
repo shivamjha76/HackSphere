@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import require_role
 from app.models import Hackathon, User
+from app.models import Hackathon, User, Registration
 from app.schemas.hackathon import (
     HackathonCreate,
     HackathonUpdate,
@@ -49,12 +50,34 @@ def get_my_hackathons(
     current_user: User = Depends(require_role("organizer")),
     db: Session = Depends(get_db)
 ):
-    return (
+    hackathons = (
         db.query(Hackathon)
         .filter(Hackathon.organizer_id == current_user.id)
         .order_by(Hackathon.created_at.desc())
         .all()
     )
+
+    result = []
+
+    for hackathon in hackathons:
+        participant_count = db.query(Registration).filter(
+            Registration.hackathon_id == hackathon.id
+        ).count()
+
+        result.append({
+            "id": hackathon.id,
+            "title": hackathon.title,
+            "description": hackathon.description,
+            "organizer_id": hackathon.organizer_id,
+            "status": hackathon.status,
+            "registration_start": hackathon.registration_start,
+            "registration_end": hackathon.registration_end,
+            "hackathon_start": hackathon.hackathon_start,
+            "hackathon_end": hackathon.hackathon_end,
+            "participant_count": participant_count
+        })
+
+    return result
     
 
 @router.get("/{hackathon_id}", response_model=HackathonResponse)

@@ -23,6 +23,7 @@ class HackathonResponse(BaseModel):
     registration_end: datetime
     hackathon_start: datetime
     hackathon_end: datetime
+    participant_count: int
 
     class Config:
         from_attributes = True
