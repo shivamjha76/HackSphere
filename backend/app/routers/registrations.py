@@ -6,6 +6,7 @@ from app.core.database import get_db
 from app.core.security import get_current_user, require_role
 from app.models import Hackathon, Registration, User
 from app.schemas.registration import RegistrationResponse
+from app.core.hackathon_permissions import get_owned_hackathon
 
 
 router = APIRouter(
@@ -133,3 +134,16 @@ def cancel_registration(
     db.commit()
 
     return None
+
+@router.get(
+    "/{hackathon_id}/registrations",
+    response_model=list[RegistrationResponse]
+)
+def get_hackathon_registrations(
+    hackathon: Hackathon = Depends(get_owned_hackathon),
+    current_user: User = Depends(require_role("organizer")),
+    db: Session = Depends(get_db)
+):
+    return db.query(Registration).filter(
+        Registration.hackathon_id == hackathon.id
+    ).all()
