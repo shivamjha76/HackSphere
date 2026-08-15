@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import datetime,timezone
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from typing import Literal
 
@@ -11,6 +11,25 @@ class HackathonCreate(BaseModel):
     registration_end: datetime
     hackathon_start: datetime
     hackathon_end: datetime
+
+    @model_validator(mode="after")
+    def validate_dates(self):
+        if self.registration_start >= self.registration_end:
+            raise ValueError(
+                "Registration end must be after registration start"
+            )
+
+        if self.registration_end > self.hackathon_start:
+            raise ValueError(
+                "Hackathon must start after registration ends"
+            )
+
+        if self.hackathon_start >= self.hackathon_end:
+            raise ValueError(
+                "Hackathon end must be after hackathon start"
+            )
+
+        return self
 
 
 class HackathonResponse(BaseModel):
@@ -36,6 +55,25 @@ class HackathonUpdate(BaseModel):
     registration_end: datetime
     hackathon_start: datetime
     hackathon_end: datetime
+
+    @model_validator(mode="after")
+    def validate_dates(self):
+        if self.registration_start >= self.registration_end:
+            raise ValueError(
+                "Registration end must be after registration start"
+            )
+
+        if self.registration_end > self.hackathon_start:
+            raise ValueError(
+                "Hackathon must start after registration ends"
+            )
+
+        if self.hackathon_start >= self.hackathon_end:
+            raise ValueError(
+                "Hackathon end must be after hackathon start"
+            )
+
+        return self
     
 
 class HackathonStatusUpdate(BaseModel):
