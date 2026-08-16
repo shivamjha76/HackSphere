@@ -7,8 +7,6 @@ class RegistrationResponse(BaseModel):
     id: int
     hackathon_id: int
     participant_id: int
-    participant_name: str
-    participant_email: str
     registered_at: datetime
     status: str
 

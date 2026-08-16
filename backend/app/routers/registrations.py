@@ -17,6 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.models import Hackathon, Registration, User
+from app.services.notification_service import create_notification
 
 router = APIRouter(
     prefix="/api/hackathons",
@@ -289,6 +290,14 @@ def update_registration_status(
         )
 
     registration.status = status
+    
+    if status == "approved":
+      create_notification(
+        db=db,
+        user_id=registration.participant_id,
+        title="Registration Approved",
+        message="Your hackathon registration has been approved."
+    )
 
     db.commit()
 
