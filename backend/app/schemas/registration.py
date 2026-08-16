@@ -10,6 +10,7 @@ class RegistrationResponse(BaseModel):
     participant_name: str
     participant_email: str
     registered_at: datetime
+    status: str
 
     class Config:
         from_attributes = True

@@ -221,7 +221,8 @@ def get_hackathon_registrations(
         Registration.participant_id,
         User.name.label("participant_name"),
         User.email.label("participant_email"),
-        Registration.registered_at
+        Registration.registered_at,
+        Registration.status
     )
     .join(
         User,

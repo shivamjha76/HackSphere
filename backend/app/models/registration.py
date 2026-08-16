@@ -4,7 +4,7 @@ from sqlalchemy import DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
-
+from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint
 
 class Registration(Base):
     __tablename__ = "registrations"
@@ -26,6 +26,12 @@ class Registration(Base):
         default=datetime.utcnow,
         nullable=False
     )
+    
+    status: Mapped[str] = mapped_column(
+    String(50),
+    default="registered",
+    nullable=False
+   )
 
     __table_args__ = (
         UniqueConstraint(
