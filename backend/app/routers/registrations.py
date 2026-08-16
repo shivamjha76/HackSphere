@@ -214,11 +214,24 @@ def get_hackathon_registrations(
             detail="You do not own this hackathon"
         )
 
-    return (
-        db.query(Registration)
-        .filter(
-            Registration.hackathon_id == hackathon_id
-        )
-        .order_by(Registration.registered_at.desc())
-        .all()
+    registrations = (
+    db.query(
+        Registration.id,
+        Registration.hackathon_id,
+        Registration.participant_id,
+        User.name.label("participant_name"),
+        User.email.label("participant_email"),
+        Registration.registered_at
     )
+    .join(
+        User,
+        User.id == Registration.participant_id
+    )
+    .filter(
+        Registration.hackathon_id == hackathon_id
+    )
+    .order_by(Registration.registered_at.desc())
+    .all()
+)
+
+    return registrations
