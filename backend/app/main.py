@@ -6,6 +6,7 @@ from app.routers import registrations
 from app.routers import teams
 from app.routers import submissions
 from app.routers import judges
+from app.routers import judge_scores
 
 app = FastAPI(title="HackSphere API")
 app.include_router(users.router)
@@ -15,6 +16,7 @@ app.include_router(registrations.router)
 app.include_router(teams.router)
 app.include_router(submissions.router)
 app.include_router(judges.router)
+app.include_router(judge_scores.router)
 
 @app.get("/")
 def root():

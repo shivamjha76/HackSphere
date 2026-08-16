@@ -5,3 +5,4 @@ from app.models.team import Team
 from app.models.team_member import TeamMember
 from app.models.submission import Submission
 from app.models.judge import Judge
+from app.models.judge_score import JudgeScore
