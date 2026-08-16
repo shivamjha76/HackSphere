@@ -20,6 +20,11 @@ class Hackathon(Base):
         Text,
         nullable=False
     )
+    
+    max_participants: Mapped[int] = mapped_column(
+    nullable=False,
+    default=100
+    )
 
     organizer_id: Mapped[int] = mapped_column(
         ForeignKey("users.id"),

@@ -77,6 +77,16 @@ def register_for_hackathon(
             detail="Already registered for this hackathon"
         )
 
+    participant_count = db.query(Registration).filter(
+        Registration.hackathon_id == hackathon_id
+    ).count()
+
+    if participant_count >= hackathon.max_participants:
+        raise HTTPException(
+            status_code=400,
+            detail="Hackathon has reached its maximum participant capacity"
+        )
+
     registration = Registration(
         hackathon_id=hackathon_id,
         participant_id=current_user.id

@@ -39,7 +39,8 @@ def build_hackathon_response(
         "registration_end": hackathon.registration_end,
         "hackathon_start": hackathon.hackathon_start,
         "hackathon_end": hackathon.hackathon_end,
-        "participant_count": participant_count
+        "participant_count": participant_count,
+        "max_participants": hackathon.max_participants,
     }
 
 
@@ -60,8 +61,9 @@ def create_hackathon(
         registration_start=hackathon_data.registration_start,
         registration_end=hackathon_data.registration_end,
         hackathon_start=hackathon_data.hackathon_start,
-        hackathon_end=hackathon_data.hackathon_end
-    )
+        hackathon_end=hackathon_data.hackathon_end,
+        max_participants=hackathon_data.max_participants,
+       )
 
     db.add(hackathon)
     db.commit()
@@ -178,6 +180,7 @@ def update_hackathon(
     hackathon.registration_end = hackathon_data.registration_end
     hackathon.hackathon_start = hackathon_data.hackathon_start
     hackathon.hackathon_end = hackathon_data.hackathon_end
+    hackathon.max_participants = hackathon_data.max_participants
 
     db.commit()
     db.refresh(hackathon)

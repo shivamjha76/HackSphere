@@ -11,6 +11,7 @@ class HackathonCreate(BaseModel):
     registration_end: datetime
     hackathon_start: datetime
     hackathon_end: datetime
+    max_participants: int = 100
 
     @model_validator(mode="after")
     def validate_dates(self):
@@ -43,6 +44,7 @@ class HackathonResponse(BaseModel):
     hackathon_start: datetime
     hackathon_end: datetime
     participant_count: int
+    max_participants: int
 
     class Config:
         from_attributes = True
@@ -55,6 +57,7 @@ class HackathonUpdate(BaseModel):
     registration_end: datetime
     hackathon_start: datetime
     hackathon_end: datetime
+    max_participants: int
 
     @model_validator(mode="after")
     def validate_dates(self):
