@@ -367,3 +367,42 @@ def get_team_details(
         "leader_id": team.leader_id,
         "max_members": team.max_members
     }
+    
+@router.delete(
+    "/{hackathon_id}/teams/{team_id}"
+)
+def delete_team(
+    hackathon_id: int,
+    team_id: int,
+    current_user: User = Depends(require_role("participant")),
+    db: Session = Depends(get_db)
+):
+    team = db.query(Team).filter(
+        Team.id == team_id,
+        Team.hackathon_id == hackathon_id
+    ).first()
+
+    if not team:
+        raise HTTPException(
+            status_code=404,
+            detail="Team not found"
+        )
+
+    if team.leader_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Only the team leader can delete the team"
+        )
+
+    db.query(TeamMember).filter(
+        TeamMember.team_id == team_id
+    ).delete(
+        synchronize_session=False
+    )
+
+    db.delete(team)
+    db.commit()
+
+    return {
+        "message": "Team deleted successfully"
+    }
