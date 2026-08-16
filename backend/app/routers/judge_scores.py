@@ -9,6 +9,7 @@ from app.models.judge import Judge
 from app.models.judge_score import JudgeScore
 from app.models.submission import Submission
 from app.schemas.judge_score import JudgeScoreCreate, JudgeScoreResponse
+from app.schemas.submission import SubmissionResponse
 
 router = APIRouter(
     prefix="/api/hackathons",
@@ -264,3 +265,60 @@ def get_leaderboard(
         item["rank"] = rank
 
     return leaderboard
+
+
+@router.patch(
+    "/{hackathon_id}/submissions/{submission_id}/winner",
+    response_model=SubmissionResponse
+)
+def declare_winner(
+    hackathon_id: int,
+    submission_id: int,
+    current_user: User = Depends(require_role("organizer")),
+    db: Session = Depends(get_db)
+):
+    hackathon = db.query(Hackathon).filter(
+        Hackathon.id == hackathon_id
+    ).first()
+
+    if not hackathon:
+        raise HTTPException(
+            status_code=404,
+            detail="Hackathon not found"
+        )
+
+    if hackathon.organizer_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not own this hackathon"
+        )
+
+    submission = db.query(Submission).filter(
+        Submission.id == submission_id,
+        Submission.hackathon_id == hackathon_id
+    ).first()
+
+    if not submission:
+        raise HTTPException(
+            status_code=404,
+            detail="Submission not found"
+        )
+
+    existing_winner = db.query(Submission).filter(
+    Submission.hackathon_id == hackathon_id,
+    Submission.status == "winner",
+    Submission.id != submission_id
+).first()
+
+    if existing_winner:
+     raise HTTPException(
+        status_code=409,
+        detail="A winner has already been declared for this hackathon"
+    )
+
+    submission.status = "winner"
+
+    db.commit()
+    db.refresh(submission)
+
+    return submission
