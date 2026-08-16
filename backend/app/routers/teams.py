@@ -308,3 +308,62 @@ def leave_team(
     return {
         "message": "You left the team successfully"
     }
+    
+@router.get(
+    "/{hackathon_id}/teams"
+)
+def get_hackathon_teams(
+    hackathon_id: int,
+    current_user: User = Depends(require_role("organizer")),
+    db: Session = Depends(get_db)
+):
+    hackathon = db.query(Hackathon).filter(
+        Hackathon.id == hackathon_id
+    ).first()
+
+    if not hackathon:
+        raise HTTPException(
+            status_code=404,
+            detail="Hackathon not found"
+        )
+
+    if hackathon.organizer_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not own this hackathon"
+        )
+
+    teams = db.query(Team).filter(
+        Team.hackathon_id == hackathon_id
+    ).all()
+
+    return teams
+
+
+@router.get(
+    "/{hackathon_id}/teams/{team_id}"
+)
+def get_team_details(
+    hackathon_id: int,
+    team_id: int,
+    current_user: User = Depends(require_role("participant")),
+    db: Session = Depends(get_db)
+):
+    team = db.query(Team).filter(
+        Team.id == team_id,
+        Team.hackathon_id == hackathon_id
+    ).first()
+
+    if not team:
+        raise HTTPException(
+            status_code=404,
+            detail="Team not found"
+        )
+
+    return {
+        "id": team.id,
+        "hackathon_id": team.hackathon_id,
+        "name": team.name,
+        "leader_id": team.leader_id,
+        "max_members": team.max_members
+    }
