@@ -218,3 +218,93 @@ def get_team_members(
     "leader_id": team.leader_id,
     "members": members_data
 }
+    
+@router.delete(
+    "/{hackathon_id}/teams/{team_id}/members/{participant_id}"
+)
+def remove_team_member(
+    hackathon_id: int,
+    team_id: int,
+    participant_id: int,
+    current_user: User = Depends(require_role("participant")),
+    db: Session = Depends(get_db)
+):
+    team = db.query(Team).filter(
+        Team.id == team_id,
+        Team.hackathon_id == hackathon_id
+    ).first()
+
+    if not team:
+        raise HTTPException(
+            status_code=404,
+            detail="Team not found"
+        )
+
+    if team.leader_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Only the team leader can remove members"
+        )
+
+    membership = db.query(TeamMember).filter(
+        TeamMember.team_id == team_id,
+        TeamMember.participant_id == participant_id
+    ).first()
+
+    if not membership:
+        raise HTTPException(
+            status_code=404,
+            detail="Team member not found"
+        )
+
+    db.delete(membership)
+    db.commit()
+
+    return {
+        "message": "Team member removed successfully"
+    }
+    
+
+@router.delete(
+    "/{hackathon_id}/teams/{team_id}/leave"
+)
+def leave_team(
+    hackathon_id: int,
+    team_id: int,
+    current_user: User = Depends(require_role("participant")),
+    db: Session = Depends(get_db)
+):
+    team = db.query(Team).filter(
+        Team.id == team_id,
+        Team.hackathon_id == hackathon_id
+    ).first()
+
+    if not team:
+        raise HTTPException(
+            status_code=404,
+            detail="Team not found"
+        )
+
+    if team.leader_id == current_user.id:
+        raise HTTPException(
+            status_code=400,
+            detail="Team leader cannot leave the team"
+        )
+
+    membership = db.query(TeamMember).filter(
+        TeamMember.team_id == team_id,
+        TeamMember.participant_id == current_user.id
+    ).first()
+
+    if not membership:
+        raise HTTPException(
+            status_code=404,
+            detail="You are not a member of this team"
+        )
+
+    db.delete(membership)
+    db.commit()
+
+    return {
+        "message": "You left the team successfully"
+    }
