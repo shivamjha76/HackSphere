@@ -277,3 +277,65 @@ def get_team_submission(
         )
 
     return submission
+
+
+@router.put(
+    "/{hackathon_id}/teams/{team_id}/submission",
+    response_model=SubmissionResponse
+)
+def update_submission(
+    hackathon_id: int,
+    team_id: int,
+    submission_data: SubmissionCreate,
+    current_user: User = Depends(require_role("participant")),
+    db: Session = Depends(get_db)
+):
+    team = db.query(Team).filter(
+        Team.id == team_id,
+        Team.hackathon_id == hackathon_id
+    ).first()
+
+    if not team:
+        raise HTTPException(
+            status_code=404,
+            detail="Team not found"
+        )
+
+    if team.leader_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Only the team leader can update the submission"
+        )
+
+    submission = db.query(Submission).filter(
+        Submission.team_id == team_id,
+        Submission.hackathon_id == hackathon_id
+    ).first()
+
+    if not submission:
+        raise HTTPException(
+            status_code=404,
+            detail="Submission not found"
+        )
+
+    if submission.status != "submitted":
+        raise HTTPException(
+            status_code=400,
+            detail="Submission can no longer be edited"
+        )
+
+    submission.title = submission_data.title
+    submission.description = submission_data.description
+    submission.github_url = (
+        str(submission_data.github_url)
+        if submission_data.github_url else None
+    )
+    submission.demo_url = (
+        str(submission_data.demo_url)
+        if submission_data.demo_url else None
+    )
+
+    db.commit()
+    db.refresh(submission)
+
+    return submission
