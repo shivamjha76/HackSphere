@@ -189,3 +189,43 @@ def update_submission_status(
     db.refresh(submission)
 
     return submission
+
+
+@router.get(
+    "/{hackathon_id}/submissions/{submission_id}",
+    response_model=SubmissionResponse
+)
+def get_submission(
+    hackathon_id: int,
+    submission_id: int,
+    current_user: User = Depends(require_role("organizer")),
+    db: Session = Depends(get_db)
+):
+    hackathon = db.query(Hackathon).filter(
+        Hackathon.id == hackathon_id
+    ).first()
+
+    if not hackathon:
+        raise HTTPException(
+            status_code=404,
+            detail="Hackathon not found"
+        )
+
+    if hackathon.organizer_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not own this hackathon"
+        )
+
+    submission = db.query(Submission).filter(
+        Submission.id == submission_id,
+        Submission.hackathon_id == hackathon_id
+    ).first()
+
+    if not submission:
+        raise HTTPException(
+            status_code=404,
+            detail="Submission not found"
+        )
+
+    return submission
