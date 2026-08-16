@@ -236,3 +236,80 @@ def get_hackathon_registrations(
 )
 
     return registrations
+
+
+@router.patch(
+    "/{hackathon_id}/registration/{registration_id}/status",
+    response_model=RegistrationResponse
+)
+def update_registration_status(
+    hackathon_id: int,
+    registration_id: int,
+    status: str,
+    current_user: User = Depends(require_role("organizer")),
+    db: Session = Depends(get_db)
+):
+    hackathon = db.query(Hackathon).filter(
+        Hackathon.id == hackathon_id
+    ).first()
+
+    if not hackathon:
+        raise HTTPException(
+            status_code=404,
+            detail="Hackathon not found"
+        )
+
+    if hackathon.organizer_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not own this hackathon"
+        )
+
+    registration = db.query(Registration).filter(
+        Registration.id == registration_id,
+        Registration.hackathon_id == hackathon_id
+    ).first()
+
+    if not registration:
+        raise HTTPException(
+            status_code=404,
+            detail="Registration not found"
+        )
+
+    allowed_statuses = {
+        "registered",
+        "approved",
+        "rejected"
+    }
+
+    if status not in allowed_statuses:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid registration status"
+        )
+
+    registration.status = status
+
+    db.commit()
+
+    result = (
+    db.query(
+        Registration.id,
+        Registration.hackathon_id,
+        Registration.participant_id,
+        User.name.label("participant_name"),
+        User.email.label("participant_email"),
+        Registration.registered_at,
+        Registration.status
+    )
+    .join(
+        User,
+        User.id == Registration.participant_id
+    )
+    .filter(
+        Registration.id == registration_id
+    )
+    .first()
+)
+
+    return result
