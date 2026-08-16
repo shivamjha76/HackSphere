@@ -97,3 +97,36 @@ def create_submission(
     db.refresh(submission)
 
     return submission
+
+
+@router.get(
+    "/{hackathon_id}/submissions"
+)
+def get_hackathon_submissions(
+    hackathon_id: int,
+    current_user: User = Depends(require_role("organizer")),
+    db: Session = Depends(get_db)
+):
+    hackathon = db.query(Hackathon).filter(
+        Hackathon.id == hackathon_id
+    ).first()
+
+    if not hackathon:
+        raise HTTPException(
+            status_code=404,
+            detail="Hackathon not found"
+        )
+
+    if hackathon.organizer_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not own this hackathon"
+        )
+
+    submissions = db.query(Submission).filter(
+        Submission.hackathon_id == hackathon_id
+    ).order_by(
+        Submission.submitted_at.desc()
+    ).all()
+
+    return submissions
