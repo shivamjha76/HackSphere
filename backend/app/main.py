@@ -3,12 +3,14 @@ from app.routers import users
 from app.routers import auth
 from app.routers import hackathons
 from app.routers import registrations
+from app.routers import teams
 
 app = FastAPI(title="HackSphere API")
 app.include_router(users.router)
 app.include_router(auth.router)
 app.include_router(hackathons.router)
 app.include_router(registrations.router)
+app.include_router(teams.router)
 
 @app.get("/")
 def root():
