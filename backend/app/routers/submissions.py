@@ -130,3 +130,62 @@ def get_hackathon_submissions(
     ).all()
 
     return submissions
+
+
+@router.patch(
+    "/{hackathon_id}/submissions/{submission_id}/status",
+    response_model=SubmissionResponse
+)
+def update_submission_status(
+    hackathon_id: int,
+    submission_id: int,
+    status: str,
+    current_user: User = Depends(require_role("organizer")),
+    db: Session = Depends(get_db)
+):
+    hackathon = db.query(Hackathon).filter(
+        Hackathon.id == hackathon_id
+    ).first()
+
+    if not hackathon:
+        raise HTTPException(
+            status_code=404,
+            detail="Hackathon not found"
+        )
+
+    if hackathon.organizer_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not own this hackathon"
+        )
+
+    submission = db.query(Submission).filter(
+        Submission.id == submission_id,
+        Submission.hackathon_id == hackathon_id
+    ).first()
+
+    if not submission:
+        raise HTTPException(
+            status_code=404,
+            detail="Submission not found"
+        )
+
+    allowed_statuses = {
+        "submitted",
+        "shortlisted",
+        "winner",
+        "rejected"
+    }
+
+    if status not in allowed_statuses:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid submission status"
+        )
+
+    submission.status = status
+
+    db.commit()
+    db.refresh(submission)
+
+    return submission
