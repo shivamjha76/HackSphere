@@ -229,3 +229,51 @@ def get_submission(
         )
 
     return submission
+
+
+@router.get(
+    "/{hackathon_id}/teams/{team_id}/submission",
+    response_model=SubmissionResponse
+)
+def get_team_submission(
+    hackathon_id: int,
+    team_id: int,
+    current_user: User = Depends(require_role("participant")),
+    db: Session = Depends(get_db)
+):
+    team = db.query(Team).filter(
+        Team.id == team_id,
+        Team.hackathon_id == hackathon_id
+    ).first()
+
+    if not team:
+        raise HTTPException(
+            status_code=404,
+            detail="Team not found"
+        )
+
+    is_leader = team.leader_id == current_user.id
+
+    is_member = db.query(TeamMember).filter(
+        TeamMember.team_id == team_id,
+        TeamMember.participant_id == current_user.id
+    ).first()
+
+    if not is_leader and not is_member:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not a member of this team"
+        )
+
+    submission = db.query(Submission).filter(
+        Submission.team_id == team_id,
+        Submission.hackathon_id == hackathon_id
+    ).first()
+
+    if not submission:
+        raise HTTPException(
+            status_code=404,
+            detail="Submission not found"
+        )
+
+    return submission
