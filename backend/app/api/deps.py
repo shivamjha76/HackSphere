@@ -14,7 +14,7 @@ reusable_oauth2 = OAuth2PasswordBearer(
 
 
 def get_user_roles(user: User) -> List[str]:
-    """Helper to extract role names for a user."""
+    """Helper to extract active role names for a user."""
     return [ur.role.name for ur in user.user_roles if ur.role]
 
 
@@ -65,3 +65,35 @@ def get_current_user(
         )
 
     return user
+
+
+class RoleChecker:
+    """
+    Dependency factory enforcing role prerequisites on protected endpoints.
+    Superusers automatically bypass role restrictions.
+    """
+    def __init__(self, allowed_roles: List[str]):
+        self.allowed_roles = allowed_roles
+
+    def __call__(self, current_user: User = Depends(get_current_user)) -> User:
+        # SuperAdmin or is_superuser has root platform bypass
+        if current_user.is_superuser:
+            return current_user
+        
+        user_roles = get_user_roles(current_user)
+        if "super_admin" in user_roles:
+            return current_user
+
+        if not any(role in user_roles for role in self.allowed_roles):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Operation not permitted. Required role: {', '.join(self.allowed_roles)}",
+            )
+        return current_user
+
+
+# Reusable Server-Side Role Guards
+require_super_admin = RoleChecker(["super_admin"])
+require_organizer = RoleChecker(["organizer"])
+require_judge = RoleChecker(["judge"])
+require_participant = RoleChecker(["participant"])

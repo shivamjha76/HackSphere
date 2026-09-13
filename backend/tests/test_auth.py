@@ -1,3 +1,4 @@
+import uuid
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
@@ -5,12 +6,18 @@ from app.main import app
 client = TestClient(app)
 
 
+def unique_email(prefix: str = "user") -> str:
+    """Generate a unique test email to avoid collisions."""
+    return f"{prefix}_{uuid.uuid4().hex[:8]}@example.com"
+
+
 def test_signup_success():
     """Verify new user registration, token return, role assignment, and XP."""
+    email = unique_email("signup")
     response = client.post(
         "/api/v1/auth/signup",
         json={
-            "email": "neha.new@example.com",
+            "email": email,
             "password": "Password123!",
             "full_name": "Neha Patel",
             "skills": "React, Python",
@@ -20,7 +27,7 @@ def test_signup_success():
     data = response.json()
     assert "access_token" in data
     assert data["token_type"] == "bearer"
-    assert data["user"]["email"] == "neha.new@example.com"
+    assert data["user"]["email"] == email
     assert data["user"]["full_name"] == "Neha Patel"
     assert data["user"]["xp"] == 20
     assert "participant" in data["user"]["roles"]
@@ -28,8 +35,9 @@ def test_signup_success():
 
 def test_signup_duplicate_email():
     """Verify duplicate email registration is rejected."""
+    email = unique_email("dup")
     payload = {
-        "email": "duplicate@example.com",
+        "email": email,
         "password": "Password123!",
         "full_name": "Duplicate User",
     }
@@ -45,11 +53,11 @@ def test_signup_duplicate_email():
 
 def test_login_success():
     """Verify login with correct credentials returns valid JWT."""
-    # Ensure account exists
+    email = unique_email("login")
     signup_res = client.post(
         "/api/v1/auth/signup",
         json={
-            "email": "login.test@example.com",
+            "email": email,
             "password": "ValidPassword123!",
             "full_name": "Login Tester",
         },
@@ -60,22 +68,32 @@ def test_login_success():
     login_res = client.post(
         "/api/v1/auth/login",
         json={
-            "email": "login.test@example.com",
+            "email": email,
             "password": "ValidPassword123!",
         },
     )
     assert login_res.status_code == 200
     data = login_res.json()
     assert "access_token" in data
-    assert data["user"]["email"] == "login.test@example.com"
+    assert data["user"]["email"] == email
 
 
 def test_login_wrong_password():
     """Verify login fails with wrong password."""
+    email = unique_email("wrong_pass")
+    client.post(
+        "/api/v1/auth/signup",
+        json={
+            "email": email,
+            "password": "ValidPassword123!",
+            "full_name": "Tester",
+        },
+    )
+
     response = client.post(
         "/api/v1/auth/login",
         json={
-            "email": "login.test@example.com",
+            "email": email,
             "password": "WrongPassword999!",
         },
     )
@@ -85,14 +103,16 @@ def test_login_wrong_password():
 
 def test_get_me_authenticated():
     """Verify accessing /api/v1/auth/me with Bearer token."""
+    email = unique_email("profile")
     signup_res = client.post(
         "/api/v1/auth/signup",
         json={
-            "email": "profile.check@example.com",
+            "email": email,
             "password": "Password123!",
             "full_name": "Profile Checker",
         },
     )
+    assert signup_res.status_code == 201
     token = signup_res.json()["access_token"]
 
     response = client.get(
@@ -101,7 +121,7 @@ def test_get_me_authenticated():
     )
     assert response.status_code == 200
     user_data = response.json()
-    assert user_data["email"] == "profile.check@example.com"
+    assert user_data["email"] == email
     assert user_data["full_name"] == "Profile Checker"
     assert "participant" in user_data["roles"]
 
