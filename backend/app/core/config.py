@@ -43,6 +43,11 @@ class Settings(BaseSettings):
     POSTGRES_DB: Optional[str] = None
     POSTGRES_PORT: int = 5432
 
+    # JWT Authentication Settings
+    SECRET_KEY: str = "hacksphere-super-secure-production-ready-jwt-secret-key-2026-xyz-token-generator"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days for dev
+
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
         if self.DATABASE_URL:
@@ -55,7 +60,6 @@ class Settings(BaseSettings):
         # Default local SQLite database file in repository root /database/
         base_dir = Path(__file__).resolve().parent.parent.parent.parent
         db_path = base_dir / "database" / "hacksphere.db"
-        # Ensure database directory exists
         db_path.parent.mkdir(parents=True, exist_ok=True)
         return f"sqlite:///{db_path.as_posix()}"
 
