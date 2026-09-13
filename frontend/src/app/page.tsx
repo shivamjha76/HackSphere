@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { RoleSwitcher, ROLE_CONFIGS } from "@/components/RoleSwitcher";
 import { useAuth } from "@/context/AuthContext";
 import {
   Activity,
@@ -24,6 +25,8 @@ import {
   UserPlus,
   Shield,
   Zap,
+  Layers,
+  ArrowRight,
 } from "lucide-react";
 
 interface HealthData {
@@ -36,7 +39,7 @@ interface HealthData {
 }
 
 export default function HomePage() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, activeRole, availableRoles, setActiveRole } = useAuth();
   const [health, setHealth] = useState<HealthData | null>(null);
   const [loadingHealth, setLoadingHealth] = useState(true);
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -78,9 +81,11 @@ export default function HomePage() {
       .toUpperCase();
   };
 
+  const activeConfig = activeRole ? ROLE_CONFIGS[activeRole] : null;
+
   return (
     <main className="min-h-screen bg-slate-50/60 pb-16">
-      {/* Top Navigation Bar with Dynamic Auth */}
+      {/* Top Navigation Bar with Dynamic Auth & Role Switcher */}
       <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
         <div className="max-w-6xl mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
           <BrandLogo variant="full" />
@@ -95,6 +100,9 @@ export default function HomePage() {
           <div className="flex items-center gap-3">
             {isAuthenticated && user ? (
               <div className="flex items-center gap-3">
+                {/* Role Switcher Component */}
+                <RoleSwitcher />
+
                 <div className="flex items-center gap-2">
                   <Avatar className="h-9 w-9 ring-1 ring-blue-500/20">
                     <AvatarFallback>{getInitials(user.full_name)}</AvatarFallback>
@@ -111,7 +119,7 @@ export default function HomePage() {
                   size="sm"
                   variant="ghost"
                   onClick={logout}
-                  className="text-slate-500 hover:text-red-600"
+                  className="text-slate-500 hover:text-red-600 cursor-pointer"
                   title="Sign Out"
                 >
                   <LogOut className="w-4 h-4" />
@@ -134,18 +142,18 @@ export default function HomePage() {
       </header>
 
       {/* Main Container */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 space-y-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 space-y-8">
         {/* Step Banner */}
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold">
-            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-            <span>Step 9 Complete: Frontend Auth Context & Token Storage Active</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold shadow-2xs">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Step 11 Complete: Multi-Role Context Switcher Active (Phase 3 100% Complete ✅)</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            Authentication & Role Engine
+            Authentication & Multi-Role Architecture
           </h1>
           <p className="text-slate-600 max-w-xl mx-auto text-sm sm:text-base">
-            Test seamless user signup, login with JWT token persistence, and role recognition.
+            Ek Email = Ek Account: Users hold multiple roles and switch active perspectives effortlessly without re-authenticating.
           </p>
         </div>
 
@@ -165,7 +173,7 @@ export default function HomePage() {
 
             <div className="pt-3 space-y-3">
               {isAuthenticated && user ? (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-500">Name:</span>
                     <span className="font-semibold text-slate-800">{user.full_name}</span>
@@ -175,14 +183,20 @@ export default function HomePage() {
                     <span className="font-mono text-slate-700">{user.email}</span>
                   </div>
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-slate-500">Active Roles:</span>
-                    <div className="flex gap-1">
+                    <span className="text-slate-500">Assigned Roles:</span>
+                    <div className="flex flex-wrap gap-1">
                       {user.roles.map((r) => (
                         <Badge key={r} variant="brand" className="text-2xs py-0">
                           {r}
                         </Badge>
                       ))}
                     </div>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-500">Active Mode:</span>
+                    <span className="font-semibold capitalize text-blue-600">
+                      {activeRole || "None"}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-500">Gamification:</span>
@@ -233,12 +247,68 @@ export default function HomePage() {
                 <span className="text-slate-700">{health?.version || "1.0.0"}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-500">Auth Method:</span>
-                <span className="font-semibold text-slate-800">JWT (HS256) + bcrypt</span>
+                <span className="text-slate-500">Auth & RBAC:</span>
+                <span className="font-semibold text-slate-800">HS256 JWT + Server Route Guards</span>
               </div>
             </div>
           </Card>
         </div>
+
+        {/* Active Mode Context Banner (When Logged In) */}
+        {isAuthenticated && activeConfig && (
+          <Card className="p-5 bg-gradient-to-r from-slate-900 to-slate-800 text-white border-slate-700 shadow-md">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-xl ${activeConfig.color.iconBg}`}>
+                  <activeConfig.icon className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                      Current Perspective
+                    </span>
+                    <Badge variant="default" className="text-2xs">
+                      {activeConfig.name}
+                    </Badge>
+                  </div>
+                  <h4 className="text-base font-bold text-white mt-0.5">
+                    {activeConfig.badgeLabel} Activated
+                  </h4>
+                  <p className="text-xs text-slate-300 mt-0.5">
+                    {activeConfig.description}
+                  </p>
+                </div>
+              </div>
+
+              {availableRoles.length > 1 && (
+                <div className="flex items-center gap-2 self-stretch sm:self-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-700">
+                  <span className="text-xs text-slate-400">Switch:</span>
+                  <div className="flex gap-1.5">
+                    {availableRoles.map((roleId) => {
+                      const cfg = ROLE_CONFIGS[roleId];
+                      if (!cfg) return null;
+                      const isCurr = activeRole === roleId;
+                      return (
+                        <button
+                          key={roleId}
+                          type="button"
+                          onClick={() => setActiveRole(roleId)}
+                          className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer ${
+                            isCurr
+                              ? "bg-blue-600 text-white shadow-xs"
+                              : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                          }`}
+                        >
+                          {cfg.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
 
         {/* 1-Click Persona Test Switcher */}
         <Card className="p-6">
@@ -246,53 +316,66 @@ export default function HomePage() {
             <Zap className="w-5 h-5 text-amber-500" />
             <div>
               <h3 className="text-sm font-semibold text-slate-900">
-                1-Click Persona Switcher (Testing Tool)
+                1-Click Persona Quick Logins (Testing Tool)
               </h3>
               <p className="text-xs text-slate-500">
-                Instantly switch roles to test persona-specific interfaces from the 59 UI screens.
+                Instantly authenticate as single-role or multi-role personas from the 59 UI screens.
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <Button
               variant="outline"
-              className="h-auto py-3 px-4 justify-start text-left flex flex-col items-start border-slate-200 hover:border-blue-500"
+              className="h-auto py-3 px-3 justify-start text-left flex flex-col items-start border-slate-200 hover:border-blue-500 cursor-pointer"
               onClick={() => openAuth("login")}
             >
               <span className="text-xs font-semibold text-blue-600">Participant</span>
               <span className="text-sm font-bold text-slate-900">Shivam Jha</span>
-              <span className="text-2xs text-slate-500">Level 3 • 1250 XP</span>
+              <span className="text-2xs text-slate-500">Single Role • 1250 XP</span>
             </Button>
 
             <Button
               variant="outline"
-              className="h-auto py-3 px-4 justify-start text-left flex flex-col items-start border-slate-200 hover:border-indigo-500"
+              className="h-auto py-3 px-3 justify-start text-left flex flex-col items-start border-slate-200 hover:border-indigo-500 cursor-pointer"
               onClick={() => openAuth("login")}
             >
               <span className="text-xs font-semibold text-indigo-600">Organizer</span>
-              <span className="text-sm font-bold text-slate-900">TechNova Organizer</span>
+              <span className="text-sm font-bold text-slate-900">TechNova Org</span>
               <span className="text-2xs text-slate-500">Workspace Owner</span>
             </Button>
 
             <Button
               variant="outline"
-              className="h-auto py-3 px-4 justify-start text-left flex flex-col items-start border-slate-200 hover:border-purple-500"
+              className="h-auto py-3 px-3 justify-start text-left flex flex-col items-start border-slate-200 hover:border-amber-500 cursor-pointer"
               onClick={() => openAuth("login")}
             >
-              <span className="text-xs font-semibold text-purple-600">Judge</span>
+              <span className="text-xs font-semibold text-amber-600">Judge</span>
               <span className="text-sm font-bold text-slate-900">Rohan Mehta</span>
               <span className="text-2xs text-slate-500">Rubric Evaluator</span>
             </Button>
 
             <Button
               variant="outline"
-              className="h-auto py-3 px-4 justify-start text-left flex flex-col items-start border-slate-200 hover:border-emerald-500"
+              className="h-auto py-3 px-3 justify-start text-left flex flex-col items-start border-slate-200 hover:border-purple-500 cursor-pointer"
               onClick={() => openAuth("login")}
             >
-              <span className="text-xs font-semibold text-emerald-600">Super Admin</span>
+              <span className="text-xs font-semibold text-purple-600">Super Admin</span>
               <span className="text-sm font-bold text-slate-900">Platform Admin</span>
-              <span className="text-2xs text-slate-500">Global Governance</span>
+              <span className="text-2xs text-slate-500">Omni-Mode Access</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="h-auto py-3 px-3 justify-start text-left flex flex-col items-start border-dashed border-emerald-400/80 bg-emerald-50/40 hover:bg-emerald-100/60 cursor-pointer"
+              onClick={() => openAuth("login")}
+            >
+              <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-emerald-600" />
+                Multi-Role User
+              </span>
+              <span className="text-sm font-bold text-slate-900">Rahul Sharma</span>
+              <span className="text-2xs text-emerald-800">Part. + Judge + Org</span>
             </Button>
           </div>
         </Card>

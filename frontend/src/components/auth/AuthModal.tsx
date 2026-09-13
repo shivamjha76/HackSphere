@@ -258,6 +258,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <UserCheck className="w-3.5 h-3.5 text-emerald-600 mr-1.5" />
               <span>Platform SuperAdmin</span>
             </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-xs h-8 justify-start col-span-2 border-dashed border-blue-400/60 bg-blue-50/50 hover:bg-blue-100/60 text-blue-900 font-medium"
+              onClick={() => handleQuickLogin("rahul@example.com", "UserPass123!")}
+              disabled={isLoading}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-blue-600 mr-1.5 shrink-0" />
+              <span className="truncate">Rahul Sharma (Multi-Role: Participant + Judge + Organizer)</span>
+            </Button>
           </div>
         </div>
       </DialogContent>

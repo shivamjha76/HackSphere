@@ -130,6 +130,19 @@ def seed_database():
                 "level": 2,
                 "is_superuser": False,
             },
+            {
+                "email": "rahul@example.com",
+                "full_name": "Rahul Sharma",
+                "password": "UserPass123!",
+                "roles": ["participant", "judge", "organizer"],
+                "bio": "Multi-role veteran: 3x Hackathon winner, AI Judge & Tech Community Organizer.",
+                "skills": "Full-Stack, React, Python, ML, System Design",
+                "github_url": "https://github.com/rahulsharma",
+                "linkedin_url": "https://linkedin.com/in/rahulsharma-tech",
+                "xp": 1850,
+                "level": 4,
+                "is_superuser": False,
+            },
         ]
 
         users = {}
@@ -152,10 +165,15 @@ def seed_database():
                 db.add(user)
                 db.flush()
 
-                # Map Role
-                ur = UserRole(user_id=user.id, role_id=roles[u["role"]].id)
-                db.add(ur)
-                db.flush()
+            # Map Roles (supports single or multiple roles)
+            user_roles = u.get("roles") or ([u["role"]] if "role" in u else [])
+            for r_name in user_roles:
+                existing_ur = db.query(UserRole).filter_by(user_id=user.id, role_id=roles[r_name].id).first()
+                if not existing_ur:
+                    ur = UserRole(user_id=user.id, role_id=roles[r_name].id)
+                    db.add(ur)
+                    db.flush()
+
             users[u["email"]] = user
         print(f"[+] Verified {len(users)} test users with hashed passwords and roles.")
 
