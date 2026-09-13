@@ -58,6 +58,8 @@ Thumbs.db
 ehthumbs.db
 [Dd]esktop.ini
 
-# Local Uploads & Logs
+# Local Uploads & Logs & DBs
 uploads/
 *.log
+*.db
+*.sqlite3

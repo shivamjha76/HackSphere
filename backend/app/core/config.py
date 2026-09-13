@@ -1,6 +1,8 @@
 import json
-from typing import List, Union
-from pydantic import AnyHttpUrl, field_validator
+import os
+from pathlib import Path
+from typing import List, Optional, Union
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -32,6 +34,30 @@ class Settings(BaseSettings):
         elif isinstance(v, (list, tuple)):
             return [str(i) for i in v]
         return []
+
+    # Database Settings
+    DATABASE_URL: Optional[str] = None
+    POSTGRES_SERVER: Optional[str] = None
+    POSTGRES_USER: Optional[str] = None
+    POSTGRES_PASSWORD: Optional[str] = None
+    POSTGRES_DB: Optional[str] = None
+    POSTGRES_PORT: int = 5432
+
+    @property
+    def SQLALCHEMY_DATABASE_URI(self) -> str:
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+        if self.POSTGRES_SERVER and self.POSTGRES_USER:
+            password = f":{self.POSTGRES_PASSWORD}" if self.POSTGRES_PASSWORD else ""
+            db = f"/{self.POSTGRES_DB}" if self.POSTGRES_DB else ""
+            return f"postgresql://{self.POSTGRES_USER}{password}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}{db}"
+        
+        # Default local SQLite database file in repository root /database/
+        base_dir = Path(__file__).resolve().parent.parent.parent.parent
+        db_path = base_dir / "database" / "hacksphere.db"
+        # Ensure database directory exists
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        return f"sqlite:///{db_path.as_posix()}"
 
     model_config = SettingsConfigDict(
         env_file=".env",
