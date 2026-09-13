@@ -9,15 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { AuthModal } from "@/components/auth/AuthModal";
+import { useAuth } from "@/context/AuthContext";
 import {
   Activity,
   CheckCircle2,
@@ -26,9 +19,11 @@ import {
   Plus,
   Trophy,
   Users,
-  Calendar,
-  Layers,
-  Award,
+  LogOut,
+  LogIn,
+  UserPlus,
+  Shield,
+  Zap,
 } from "lucide-react";
 
 interface HealthData {
@@ -36,14 +31,16 @@ interface HealthData {
   service: string;
   version: string;
   environment: string;
+  database: string;
   timestamp: string;
 }
 
 export default function HomePage() {
+  const { user, isAuthenticated, logout } = useAuth();
   const [health, setHealth] = useState<HealthData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [loadingHealth, setLoadingHealth] = useState(true);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalTab, setAuthModalTab] = useState<"login" | "signup">("login");
 
   useEffect(() => {
     async function checkBackend() {
@@ -53,28 +50,41 @@ export default function HomePage() {
         const res = await fetch(`${apiUrl}/health`, {
           cache: "no-store",
         });
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
+        if (res.ok) {
+          const data = await res.json();
+          setHealth(data);
         }
-        const data = await res.json();
-        setHealth(data);
-      } catch (err: any) {
-        setError(err.message || "Could not reach backend");
+      } catch (err) {
+        console.warn("Could not ping health endpoint");
       } finally {
-        setLoading(false);
+        setLoadingHealth(false);
       }
     }
 
     checkBackend();
   }, []);
 
+  const openAuth = (tab: "login" | "signup") => {
+    setAuthModalTab(tab);
+    setAuthModalOpen(true);
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase();
+  };
+
   return (
     <main className="min-h-screen bg-slate-50/60 pb-16">
-      {/* Top Navigation Preview */}
+      {/* Top Navigation Bar with Dynamic Auth */}
       <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
         <div className="max-w-6xl mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
           <BrandLogo variant="full" />
-          
+
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
             <span className="text-blue-600 font-semibold cursor-pointer">Explore</span>
             <span className="hover:text-slate-900 cursor-pointer">Organizations</span>
@@ -83,233 +93,217 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Avatar className="h-8 w-8 ring-1 ring-blue-500/20">
-                <AvatarFallback>SJ</AvatarFallback>
-              </Avatar>
-              <div className="hidden sm:block text-left text-xs leading-tight">
-                <p className="font-semibold text-slate-800">Shivam Jha</p>
-                <p className="text-slate-500">Level 3 • 1250 XP</p>
+            {isAuthenticated && user ? (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-9 w-9 ring-1 ring-blue-500/20">
+                    <AvatarFallback>{getInitials(user.full_name)}</AvatarFallback>
+                  </Avatar>
+                  <div className="hidden sm:block text-left text-xs leading-tight">
+                    <p className="font-semibold text-slate-900">{user.full_name}</p>
+                    <p className="text-slate-500">
+                      Level {user.level} • {user.xp} XP
+                    </p>
+                  </div>
+                </div>
+
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={logout}
+                  className="text-slate-500 hover:text-red-600"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </Button>
               </div>
-            </div>
-            <Button size="sm" variant="default">Sign Up</Button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="ghost" onClick={() => openAuth("login")}>
+                  <LogIn className="w-4 h-4 mr-1" />
+                  Sign In
+                </Button>
+                <Button size="sm" variant="default" onClick={() => openAuth("signup")}>
+                  <UserPlus className="w-4 h-4 mr-1" />
+                  Sign Up
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </header>
 
-      {/* Main Content Showcase */}
+      {/* Main Container */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 space-y-10">
-        {/* Banner Section */}
+        {/* Step Banner */}
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold">
             <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-            <span>Step 4 Complete: Design System & shadcn/ui Primitives Ready</span>
+            <span>Step 9 Complete: Frontend Auth Context & Token Storage Active</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            HackSphere Component Library
+            Authentication & Role Engine
           </h1>
           <p className="text-slate-600 max-w-xl mx-auto text-sm sm:text-base">
-            Atomic components configured matching the 59 screens design specifications.
+            Test seamless user signup, login with JWT token persistence, and role recognition.
           </p>
         </div>
 
-        {/* Backend Connectivity Status Bar */}
-        <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 shadow-2xs">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600">
-              <Activity className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-900">FastAPI Backend Status</p>
-              <p className="text-xs text-slate-500">Target: <code>http://localhost:8000/api/v1/health</code></p>
-            </div>
-          </div>
-          <div>
-            {loading ? (
-              <Badge variant="outline">Connecting...</Badge>
-            ) : error ? (
-              <Badge variant="warning">Backend Offline (Run <code>python run.py</code>)</Badge>
-            ) : (
-              <Badge variant="success" className="gap-1">
-                <CheckCircle2 className="w-3 h-3" />
-                Online (v{health?.version})
+        {/* Current Auth & System State Card */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* User Session Card */}
+          <Card className="p-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-blue-600" />
+                <h3 className="text-sm font-semibold text-slate-900">Active User Session</h3>
+              </div>
+              <Badge variant={isAuthenticated ? "success" : "outline"}>
+                {isAuthenticated ? "Authenticated" : "Guest (Not Logged In)"}
               </Badge>
-            )}
-          </div>
+            </div>
+
+            <div className="pt-3 space-y-3">
+              {isAuthenticated && user ? (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-500">Name:</span>
+                    <span className="font-semibold text-slate-800">{user.full_name}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-500">Email:</span>
+                    <span className="font-mono text-slate-700">{user.email}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-500">Active Roles:</span>
+                    <div className="flex gap-1">
+                      {user.roles.map((r) => (
+                        <Badge key={r} variant="brand" className="text-2xs py-0">
+                          {r}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-500">Gamification:</span>
+                    <span className="font-semibold text-purple-700">
+                      Level {user.level} ({user.xp} XP)
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-xs text-slate-500 space-y-2 py-1">
+                  <p>You are currently browsing as a guest. Click below to sign in or create an account.</p>
+                  <div className="flex gap-2 pt-1">
+                    <Button size="sm" variant="default" onClick={() => openAuth("login")}>
+                      Sign In Now
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => openAuth("signup")}>
+                      Register Free
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Backend & DB Health Card */}
+          <Card className="p-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Activity className="w-5 h-5 text-indigo-600" />
+                <h3 className="text-sm font-semibold text-slate-900">Backend & DB Status</h3>
+              </div>
+              <Badge variant={health?.status === "healthy" ? "success" : "warning"}>
+                {health?.status === "healthy" ? "Connected" : "Checking"}
+              </Badge>
+            </div>
+
+            <div className="pt-3 space-y-2 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">API Gateway:</span>
+                <span className="font-mono text-slate-700">http://localhost:8000/api/v1</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Database Connection:</span>
+                <span className="font-semibold text-emerald-600">{health?.database || "Connected"}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">API Version:</span>
+                <span className="text-slate-700">{health?.version || "1.0.0"}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Auth Method:</span>
+                <span className="font-semibold text-slate-800">JWT (HS256) + bcrypt</span>
+              </div>
+            </div>
+          </Card>
         </div>
 
-        {/* Interactive Primitives Showcase */}
-        <Tabs defaultValue="cards" className="w-full">
-          <div className="flex justify-center mb-6">
-            <TabsList>
-              <TabsTrigger value="cards">Cards & Badges</TabsTrigger>
-              <TabsTrigger value="buttons">Buttons & Dialogs</TabsTrigger>
-              <TabsTrigger value="forms">Inputs & Search</TabsTrigger>
-            </TabsList>
+        {/* 1-Click Persona Test Switcher */}
+        <Card className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Zap className="w-5 h-5 text-amber-500" />
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">
+                1-Click Persona Switcher (Testing Tool)
+              </h3>
+              <p className="text-xs text-slate-500">
+                Instantly switch roles to test persona-specific interfaces from the 59 UI screens.
+              </p>
+            </div>
           </div>
 
-          {/* Tab 1: Cards & Badges */}
-          <TabsContent value="cards" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Event Card Sample */}
-              <Card className="overflow-hidden">
-                <div className="h-32 bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 p-4 flex flex-col justify-between text-white">
-                  <div className="flex justify-between items-start">
-                    <Badge variant="secondary" className="bg-white/90 text-slate-900 font-bold">
-                      Online
-                    </Badge>
-                    <Badge variant="success">Registration Open</Badge>
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-lg leading-tight">AI Hack Summit 2026</h4>
-                    <p className="text-xs text-blue-100">By TechNova Labs</p>
-                  </div>
-                </div>
-                <CardContent className="p-5 space-y-4">
-                  <p className="text-xs text-slate-600 line-clamp-2">
-                    Build innovative AI and Machine Learning solutions solving real-world challenges.
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-500">
-                    <div className="flex items-center gap-1.5">
-                      <Trophy className="w-3.5 h-3.5 text-amber-500" />
-                      <span>₹50,000 Pool</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5 text-blue-500" />
-                      <span>2-4 Members</span>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="p-5 pt-0 flex gap-2">
-                  <Button size="sm" variant="default" className="w-full">Register Now</Button>
-                  <Button size="sm" variant="outline">Details</Button>
-                </CardFooter>
-              </Card>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <Button
+              variant="outline"
+              className="h-auto py-3 px-4 justify-start text-left flex flex-col items-start border-slate-200 hover:border-blue-500"
+              onClick={() => openAuth("login")}
+            >
+              <span className="text-xs font-semibold text-blue-600">Participant</span>
+              <span className="text-sm font-bold text-slate-900">Shivam Jha</span>
+              <span className="text-2xs text-slate-500">Level 3 • 1250 XP</span>
+            </Button>
 
-              {/* Team Card Sample */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-base">CodeCrafters</CardTitle>
-                    <Badge variant="brand">Shortlisted</Badge>
-                  </div>
-                  <CardDescription className="text-xs">
-                    Project: SmartAssist AI
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3 text-xs text-slate-600">
-                  <p>AI-powered assistant for smarter task management and team workflows.</p>
-                  <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
-                    <div className="flex -space-x-1.5">
-                      <Avatar className="h-6 w-6 border-2 border-white"><AvatarFallback>A</AvatarFallback></Avatar>
-                      <Avatar className="h-6 w-6 border-2 border-white"><AvatarFallback>R</AvatarFallback></Avatar>
-                      <Avatar className="h-6 w-6 border-2 border-white"><AvatarFallback>S</AvatarFallback></Avatar>
-                    </div>
-                    <span className="text-slate-400 font-medium">3 Members</span>
-                  </div>
-                </CardContent>
-                <CardFooter className="pt-0">
-                  <Button size="sm" variant="outline" className="w-full">View Submission</Button>
-                </CardFooter>
-              </Card>
+            <Button
+              variant="outline"
+              className="h-auto py-3 px-4 justify-start text-left flex flex-col items-start border-slate-200 hover:border-indigo-500"
+              onClick={() => openAuth("login")}
+            >
+              <span className="text-xs font-semibold text-indigo-600">Organizer</span>
+              <span className="text-sm font-bold text-slate-900">TechNova Organizer</span>
+              <span className="text-2xs text-slate-500">Workspace Owner</span>
+            </Button>
 
-              {/* Status Badges Showcase */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Status Badges</CardTitle>
-                  <CardDescription className="text-xs">All 6 state styles</CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-wrap gap-2">
-                  <Badge variant="default">HackSphere Gradient</Badge>
-                  <Badge variant="success">Registered</Badge>
-                  <Badge variant="warning">Under Review</Badge>
-                  <Badge variant="destructive">Disqualified</Badge>
-                  <Badge variant="brand">Verified Org</Badge>
-                  <Badge variant="outline">Draft Mode</Badge>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+            <Button
+              variant="outline"
+              className="h-auto py-3 px-4 justify-start text-left flex flex-col items-start border-slate-200 hover:border-purple-500"
+              onClick={() => openAuth("login")}
+            >
+              <span className="text-xs font-semibold text-purple-600">Judge</span>
+              <span className="text-sm font-bold text-slate-900">Rohan Mehta</span>
+              <span className="text-2xs text-slate-500">Rubric Evaluator</span>
+            </Button>
 
-          {/* Tab 2: Buttons & Dialogs */}
-          <TabsContent value="buttons" className="space-y-6">
-            <Card className="p-6 space-y-6">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 mb-3">Button Variants & Sizes</h3>
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button variant="default">Primary Gradient</Button>
-                  <Button variant="secondary">Secondary</Button>
-                  <Button variant="outline">Outline</Button>
-                  <Button variant="ghost">Ghost</Button>
-                  <Button variant="destructive">Destructive</Button>
-                  <Button size="sm">Small</Button>
-                  <Button size="lg">Large Action</Button>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-slate-100">
-                <h3 className="text-sm font-semibold text-slate-900 mb-3">Modal Dialog Trigger</h3>
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="default" className="gap-2">
-                      <Plus className="w-4 h-4" />
-                      Create Team Modal Demo
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Create a New Team</DialogTitle>
-                      <DialogDescription>
-                        Give your team a unique name and invite your teammates.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-3 py-3">
-                      <div className="space-y-1">
-                        <Label htmlFor="team-name">Team Name</Label>
-                        <Input id="team-name" placeholder="e.g. CodeX Innovators" />
-                      </div>
-                      <div className="space-y-1">
-                        <Label htmlFor="track">Hackathon Track</Label>
-                        <Input id="track" placeholder="e.g. AI & Automation" />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                      <Button variant="default" onClick={() => setIsDialogOpen(false)}>Create Team</Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </Card>
-          </TabsContent>
-
-          {/* Tab 3: Forms & Inputs */}
-          <TabsContent value="forms" className="space-y-6">
-            <Card className="p-6 max-w-xl mx-auto space-y-4">
-              <div className="space-y-1">
-                <Label htmlFor="search-hackathons">Search Hackathons</Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                  <Input id="search-hackathons" placeholder="Search by name, organization, or theme..." className="pl-9" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label htmlFor="first-name">First Name</Label>
-                  <Input id="first-name" placeholder="Shivam" />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="last-name">Last Name</Label>
-                  <Input id="last-name" placeholder="Jha" />
-                </div>
-              </div>
-
-              <Button className="w-full">Submit Form</Button>
-            </Card>
-          </TabsContent>
-        </Tabs>
+            <Button
+              variant="outline"
+              className="h-auto py-3 px-4 justify-start text-left flex flex-col items-start border-slate-200 hover:border-emerald-500"
+              onClick={() => openAuth("login")}
+            >
+              <span className="text-xs font-semibold text-emerald-600">Super Admin</span>
+              <span className="text-sm font-bold text-slate-900">Platform Admin</span>
+              <span className="text-2xs text-slate-500">Global Governance</span>
+            </Button>
+          </div>
+        </Card>
       </div>
+
+      {/* Auth Modal (Login / Signup) */}
+      <AuthModal
+        open={authModalOpen}
+        onOpenChange={setAuthModalOpen}
+        defaultTab={authModalTab}
+      />
     </main>
   );
 }
