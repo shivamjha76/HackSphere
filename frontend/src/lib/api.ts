@@ -578,3 +578,54 @@ export const submissionsApi = {
   },
 };
 
+export interface CertificateOut {
+  id: number;
+  certificate_code: string;
+  hackathon_id: number;
+  hackathon_title: string;
+  hackathon_slug: string;
+  org_name: string;
+  certificate_type: "winner" | "runner_up" | "participation" | "judge" | "organizer" | string;
+  title: string;
+  recipient_name: string;
+  team_name?: string | null;
+  issue_date: string;
+  qr_verification_url?: string | null;
+  pdf_url?: string | null;
+  is_valid: boolean;
+}
+
+export interface CertificateVerifyOut {
+  certificate_code: string;
+  is_valid: boolean;
+  title: string;
+  recipient_name: string;
+  certificate_type: string;
+  hackathon_title: string;
+  hackathon_slug: string;
+  org_name: string;
+  team_name?: string | null;
+  issue_date: string;
+  verification_message: string;
+}
+
+export const certificatesApi = {
+  getMyCertificates: async (): Promise<CertificateOut[]> => {
+    return apiFetch<CertificateOut[]>("/certificates/my", {
+      method: "GET",
+    });
+  },
+
+  verify: async (codeOrId: string): Promise<CertificateVerifyOut> => {
+    return apiFetch<CertificateVerifyOut>(`/certificates/verify/${codeOrId}`, {
+      method: "GET",
+    });
+  },
+
+  getDetail: async (id: number): Promise<CertificateOut> => {
+    return apiFetch<CertificateOut>(`/certificates/${id}`, {
+      method: "GET",
+    });
+  },
+};
+

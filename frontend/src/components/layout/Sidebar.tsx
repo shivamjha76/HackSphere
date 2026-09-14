@@ -151,6 +151,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         else if (item.id === "explore") router.push("/explore");
                         else if (item.id === "my-teams") router.push("/teams");
                         else if (item.id === "submissions") router.push("/submissions");
+                        else if (item.id === "achievements") router.push("/certificates");
                       }
                     }}
                     title={isCollapsed ? item.title : undefined}
