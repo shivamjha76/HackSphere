@@ -67,6 +67,35 @@ def get_current_user(
     return user
 
 
+def get_current_user_optional(
+    db: Session = Depends(get_db),
+    token: Optional[str] = Depends(reusable_oauth2),
+    authorization: Optional[str] = Header(None),
+) -> Optional[User]:
+    """
+    Extracts user if valid token is provided, returns None if guest/unauthenticated.
+    """
+    jwt_token = token
+    if not jwt_token and authorization and authorization.startswith("Bearer "):
+        jwt_token = authorization.split(" ")[1]
+    if not jwt_token:
+        return None
+    payload = decode_access_token(jwt_token)
+    if not payload:
+        return None
+    user_id_str = payload.get("sub")
+    if not user_id_str:
+        return None
+    try:
+        user_id = int(user_id_str)
+    except (ValueError, TypeError):
+        return None
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user or not user.is_active:
+        return None
+    return user
+
+
 class RoleChecker:
     """
     Dependency factory enforcing role prerequisites on protected endpoints.

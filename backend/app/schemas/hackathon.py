@@ -13,6 +13,26 @@ class OrganizationBriefOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class EvaluationCriterionBriefOut(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    max_score: int = 20
+    weight: float = 1.0
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class JudgeBriefOut(BaseModel):
+    id: int
+    user_id: int
+    full_name: str
+    avatar_url: Optional[str] = None
+    expertise: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class HackathonOut(BaseModel):
     id: int
     organization_id: int
@@ -48,3 +68,31 @@ class HackathonOut(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class HackathonDetailOut(HackathonOut):
+    rules: Optional[str] = None
+    eligibility: Optional[str] = None
+    judging_start: Optional[datetime] = None
+    judging_end: Optional[datetime] = None
+    evaluation_criteria: List[EvaluationCriterionBriefOut] = []
+    judges: List[JudgeBriefOut] = []
+    teams_count: int = 0
+    is_user_registered: bool = False
+
+
+class HackathonRegistrationOut(BaseModel):
+    id: int
+    hackathon_id: int
+    user_id: int
+    status: str
+    registered_at: datetime
+    xp_awarded: int = 50
+    message: str = "Successfully registered for hackathon"
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RegistrationStatusOut(BaseModel):
+    is_registered: bool
+    registration_id: Optional[int] = None
