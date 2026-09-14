@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import health, auth, role_guard, hackathons, organizations
+from app.api.v1.endpoints import health, auth, role_guard, hackathons, organizations, dashboard
 
 api_router = APIRouter()
 
@@ -9,3 +9,4 @@ api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(role_guard.router, prefix="/protected", tags=["Role Guards"])
 api_router.include_router(hackathons.router, prefix="/hackathons", tags=["Hackathons"])
 api_router.include_router(organizations.router, prefix="/organizations", tags=["Organizations"])
+api_router.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
