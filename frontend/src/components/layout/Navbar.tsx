@@ -83,7 +83,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           ) : (
             <nav className="flex items-center justify-center gap-8 text-sm font-medium text-slate-600">
               <Link
-                href="#explore"
+                href="/explore"
                 className="hover:text-blue-600 transition-colors flex items-center gap-1.5"
               >
                 <Compass className="w-4 h-4 text-blue-600" />
@@ -244,7 +244,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Navigation Links */}
           <div className="space-y-1">
             <Link
-              href="#explore"
+              href="/explore"
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"
             >
