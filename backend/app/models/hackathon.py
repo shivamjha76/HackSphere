@@ -76,6 +76,9 @@ class Hackathon(Base, TimestampMixin):
     announcements: Mapped[List["Announcement"]] = relationship(
         "Announcement", back_populates="hackathon", cascade="all, delete-orphan"
     )
+    winners: Mapped[List["HackathonWinner"]] = relationship(
+        "HackathonWinner", back_populates="hackathon", cascade="all, delete-orphan"
+    )
 
 
 class HackathonRegistration(Base):

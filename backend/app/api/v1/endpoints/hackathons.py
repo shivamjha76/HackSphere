@@ -375,6 +375,18 @@ def register_for_hackathon(
             detail=f"Hackathon '{slug_or_id}' not found.",
         )
 
+    # Check duplicate registration
+    existing_reg = (
+        db.query(HackathonRegistration)
+        .filter_by(hackathon_id=hackathon.id, user_id=current_user.id)
+        .first()
+    )
+    if existing_reg:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You are already registered for this hackathon.",
+        )
+
     # Check status
     if hackathon.status in ["completed", "cancelled", "archived"]:
         raise HTTPException(
@@ -396,18 +408,6 @@ def register_for_hackathon(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Hackathon registration capacity has been reached.",
-        )
-
-    # Check duplicate registration
-    existing_reg = (
-        db.query(HackathonRegistration)
-        .filter_by(hackathon_id=hackathon.id, user_id=current_user.id)
-        .first()
-    )
-    if existing_reg:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You are already registered for this hackathon.",
         )
 
     # Create registration

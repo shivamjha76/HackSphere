@@ -27,6 +27,7 @@ from app.models import (
     EvaluationScore,
     Certificate,
     Announcement,
+    HackathonWinner,
 )
 
 
@@ -572,6 +573,41 @@ def seed_database():
                 db.add(a_obj)
         db.flush()
         print("[+] Seeded Hackathon broadcast announcements matching Screen #30.")
+
+        # 12. Seed Podium Winners matching Screen #53 & #57
+        winners_seed = [
+            {
+                "team_id": team_codecrafters.id,
+                "submission_id": sub.id,
+                "rank": 1,
+                "title": "1st Place Winner",
+                "prize_amount": "₹25,000",
+                "prize_type": "cash",
+                "notes": "Outstanding agentic architecture and autonomous tool integration.",
+            },
+            {
+                "team_id": team_bytebuilders.id,
+                "rank": 2,
+                "title": "1st Runner Up",
+                "prize_amount": "₹15,000",
+                "prize_type": "cash",
+                "notes": "Excellent multimodal UI and edge computing optimization.",
+            },
+        ]
+
+        for w_s in winners_seed:
+            existing_w = db.query(HackathonWinner).filter_by(
+                hackathon_id=ai_hack.id,
+                team_id=w_s["team_id"],
+            ).first()
+            if not existing_w:
+                w_obj = HackathonWinner(
+                    hackathon_id=ai_hack.id,
+                    **w_s,
+                )
+                db.add(w_obj)
+        db.flush()
+        print("[+] Seeded Hackathon podium winners (CodeCrafters: 1st, ByteBuilders: 2nd).")
 
         db.commit()
         print("\n[SUCCESS] HackSphere database seeded cleanly with complete mock ecosystem!")

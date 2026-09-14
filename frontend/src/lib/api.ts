@@ -1027,4 +1027,132 @@ export const announcementsApi = {
   },
 };
 
+// ==========================================
+// WINNERS, PODIUM & CERTIFICATE ENGINE TYPES (Step 27)
+// ==========================================
+
+export interface WinnerOut {
+  id: number;
+  hackathon_id: number;
+  team_id: number;
+  team_name: string;
+  members_count: number;
+  members: string[];
+  submission_id?: number | null;
+  project_title?: string | null;
+  rank: number;
+  title: string;
+  prize_amount?: string | null;
+  prize_type: string;
+  notes?: string | null;
+  is_published: boolean;
+  announced_at: string;
+  average_score?: number | null;
+  created_at: string;
+}
+
+export interface LeaderboardEntryOut {
+  rank: number;
+  team_id: number;
+  team_name: string;
+  project_title: string;
+  submission_id: number;
+  average_score: number;
+  evaluations_count: number;
+  demo_url?: string | null;
+  github_url?: string | null;
+  is_winner: boolean;
+}
+
+export interface PrizeDistributionItemOut {
+  rank: number;
+  place_title: string;
+  amount_summary: string;
+  amount_in_words: string;
+  prize_type: string;
+  team_quantity: number;
+  assigned_team_name?: string | null;
+}
+
+export interface PrizePoolOverviewOut {
+  total_prize_pool_summary: string;
+  total_winners_count: number;
+  prizes: PrizeDistributionItemOut[];
+}
+
+export interface WinnerItemCreate {
+  team_id: number;
+  rank: number;
+  title: string;
+  prize_amount?: string;
+  prize_type?: string;
+  notes?: string;
+}
+
+export interface DeclareWinnersPayload {
+  winners: WinnerItemCreate[];
+  auto_issue_certificates?: boolean;
+  broadcast_announcement?: boolean;
+}
+
+export interface BulkCertificateIssueResult {
+  message: string;
+  issued_count: number;
+  skipped_count: number;
+  total_certificates: number;
+}
+
+export interface WinnersDashboardOverviewOut {
+  hackathon_id: number;
+  hackathon_slug: string;
+  hackathon_title: string;
+  is_completed: boolean;
+  total_submissions: number;
+  total_evaluated: number;
+  winners: WinnerOut[];
+  prizes_overview: PrizePoolOverviewOut;
+}
+
+export const winnersApi = {
+  getWinnersOverview: async (slugOrId: string): Promise<WinnersDashboardOverviewOut> => {
+    return apiFetch<WinnersDashboardOverviewOut>(`/winners/hackathons/${slugOrId}`);
+  },
+
+  getLeaderboard: async (slugOrId: string): Promise<LeaderboardEntryOut[]> => {
+    return apiFetch<LeaderboardEntryOut[]>(`/winners/hackathons/${slugOrId}/leaderboard`);
+  },
+
+  declareWinners: async (
+    slugOrId: string,
+    payload: DeclareWinnersPayload
+  ): Promise<WinnersDashboardOverviewOut> => {
+    return apiFetch<WinnersDashboardOverviewOut>(`/winners/hackathons/${slugOrId}/declare`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getPrizesOverview: async (slugOrId: string): Promise<PrizePoolOverviewOut> => {
+    return apiFetch<PrizePoolOverviewOut>(`/winners/hackathons/${slugOrId}/prizes`);
+  },
+
+  getHackathonCertificates: async (slugOrId: string): Promise<CertificateOut[]> => {
+    return apiFetch<CertificateOut[]>(`/winners/hackathons/${slugOrId}/certificates`);
+  },
+
+  bulkIssueCertificates: async (
+    slugOrId: string,
+    certificateType: "all" | "winner" | "participation" = "all"
+  ): Promise<BulkCertificateIssueResult> => {
+    return apiFetch<BulkCertificateIssueResult>(
+      `/winners/hackathons/${slugOrId}/certificates/bulk-issue`,
+      {
+        method: "POST",
+        body: JSON.stringify({ certificate_type: certificateType }),
+      }
+    );
+  },
+};
+
+
 

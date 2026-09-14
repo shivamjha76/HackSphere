@@ -11,6 +11,7 @@ from app.api.v1.endpoints import (
     certificates,
     judging,
     announcements,
+    winners,
 )
 
 api_router = APIRouter()
@@ -27,4 +28,5 @@ api_router.include_router(submissions.router, prefix="/submissions", tags=["Subm
 api_router.include_router(certificates.router, prefix="/certificates", tags=["Certificates"])
 api_router.include_router(judging.router, prefix="/judging", tags=["Judging & Evaluations"])
 api_router.include_router(announcements.router, prefix="/announcements", tags=["Announcements"])
+api_router.include_router(winners.router, prefix="/winners", tags=["Winners & Podium"])
 

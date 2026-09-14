@@ -157,7 +157,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           } else if (item.id === "judging") {
                             router.push("/organizer/hackathons/ai-hack-summit-2026/judges");
                           } else if (item.id === "winners") {
-                            router.push("/certificates");
+                            router.push("/organizer/winners");
                           } else if (item.id === "teams") {
                             router.push("/teams");
                           } else if (item.id === "announcements") {
