@@ -212,6 +212,41 @@ export interface HackathonFilterParams {
   sort_by?: string;
 }
 
+export interface CriterionCreatePayload {
+  name: string;
+  description?: string | null;
+  max_score: number;
+  weight: number;
+}
+
+export interface HackathonCreatePayload {
+  title: string;
+  slug?: string | null;
+  tagline?: string | null;
+  short_description?: string | null;
+  detailed_description?: string | null;
+  theme?: string | null;
+  mode?: string;
+  status?: string;
+  visibility?: string;
+  min_team_size?: number;
+  max_team_size?: number;
+  max_participants?: number | null;
+  prize_pool_summary?: string | null;
+  rules?: string | null;
+  eligibility?: string | null;
+  registration_start?: string | null;
+  registration_end?: string | null;
+  event_start?: string | null;
+  event_end?: string | null;
+  submission_start?: string | null;
+  submission_end?: string | null;
+  judging_start?: string | null;
+  judging_end?: string | null;
+  result_date?: string | null;
+  criteria?: CriterionCreatePayload[];
+}
+
 export const hackathonsApi = {
   getExploreHackathons: async (
     params: HackathonFilterParams = {}
@@ -234,6 +269,13 @@ export const hackathonsApi = {
 
   getDetail: async (slugOrId: string): Promise<HackathonDetailOut> => {
     return apiFetch<HackathonDetailOut>(`/hackathons/${slugOrId}`, { method: "GET" });
+  },
+
+  create: async (payload: HackathonCreatePayload): Promise<HackathonDetailOut> => {
+    return apiFetch<HackathonDetailOut>("/hackathons", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
   },
 
   register: async (slugOrId: string): Promise<HackathonRegistrationOut> => {

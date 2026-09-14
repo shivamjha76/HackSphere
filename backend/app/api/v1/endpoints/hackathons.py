@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -5,9 +6,9 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 
 from app.db.session import get_db
-from app.api.deps import get_current_user, get_current_user_optional
+from app.api.deps import get_current_user, get_current_user_optional, get_user_roles
 from app.models.hackathon import Hackathon, HackathonRegistration
-from app.models.organization import Organization
+from app.models.organization import Organization, OrganizationMember
 from app.models.judging import HackathonJudge, EvaluationCriteria
 from app.models.user import User
 from app.schemas.hackathon import (
@@ -18,6 +19,8 @@ from app.schemas.hackathon import (
     JudgeBriefOut,
     HackathonRegistrationOut,
     RegistrationStatusOut,
+    HackathonCreatePayload,
+    CriterionCreatePayload,
 )
 
 router = APIRouter()
@@ -124,6 +127,117 @@ def map_hackathon_detail_out(h: Hackathon, current_user: Optional[User] = None) 
         teams_count=len(h.teams) if h.teams else 0,
         is_user_registered=is_registered,
     )
+
+
+def generate_slug(text: str) -> str:
+    """Helper to convert title into URL-safe slug."""
+    s = re.sub(r"[^\w\s-]", "", text.lower()).strip()
+    return re.sub(r"[-\s]+", "-", s)
+
+
+@router.post("", response_model=HackathonDetailOut, summary="Create New Hackathon Tournament")
+def create_hackathon(
+    payload: HackathonCreatePayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> HackathonDetailOut:
+    """
+    Creates a new hackathon tournament per Chapter 14.
+    Requires organizer privileges. Automatically associates host organization and scoring rubrics.
+    """
+    roles = get_user_roles(current_user)
+    if not ("organizer" in roles or current_user.is_superuser):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden: Organizer role required to create hackathons.",
+        )
+
+    # 1. Resolve host organization
+    membership = (
+        db.query(OrganizationMember)
+        .options(joinedload(OrganizationMember.organization))
+        .filter_by(user_id=current_user.id)
+        .first()
+    )
+    if membership and membership.organization:
+        org = membership.organization
+    else:
+        org = db.query(Organization).first()
+
+    if not org:
+        raise HTTPException(status_code=400, detail="No host organization available.")
+
+    # 2. Slug generation
+    slug = payload.slug
+    if not slug or not slug.strip():
+        slug = generate_slug(payload.title)
+
+    base_slug = slug
+    counter = 1
+    while db.query(Hackathon).filter_by(slug=slug).first():
+        slug = f"{base_slug}-{counter}"
+        counter += 1
+
+    # 3. Create Hackathon entity
+    hackathon = Hackathon(
+        organization_id=org.id,
+        title=payload.title,
+        slug=slug,
+        tagline=payload.tagline,
+        short_description=payload.short_description,
+        detailed_description=payload.detailed_description,
+        theme=payload.theme,
+        mode=payload.mode,
+        status=payload.status,
+        visibility=payload.visibility,
+        min_team_size=payload.min_team_size,
+        max_team_size=payload.max_team_size,
+        max_participants=payload.max_participants,
+        prize_pool_summary=payload.prize_pool_summary,
+        rules=payload.rules,
+        eligibility=payload.eligibility,
+        registration_start=payload.registration_start,
+        registration_end=payload.registration_end,
+        event_start=payload.event_start,
+        event_end=payload.event_end,
+        submission_start=payload.submission_start,
+        submission_end=payload.submission_end,
+        judging_start=payload.judging_start,
+        judging_end=payload.judging_end,
+        result_date=payload.result_date,
+        created_by_user_id=current_user.id,
+    )
+    db.add(hackathon)
+    db.flush()
+
+    # 4. Insert Evaluation Criteria if supplied
+    if payload.criteria:
+        for c in payload.criteria:
+            crit = EvaluationCriteria(
+                hackathon_id=hackathon.id,
+                name=c.name,
+                description=c.description,
+                max_score=c.max_score,
+                weight=c.weight,
+            )
+            db.add(crit)
+
+    db.commit()
+
+    # 5. Reload and map detailed response
+    refreshed = (
+        db.query(Hackathon)
+        .options(
+            joinedload(Hackathon.organization),
+            joinedload(Hackathon.registrations),
+            joinedload(Hackathon.teams),
+            joinedload(Hackathon.evaluation_criteria),
+            joinedload(Hackathon.judges).joinedload(HackathonJudge.user),
+        )
+        .filter(Hackathon.id == hackathon.id)
+        .first()
+    )
+    return map_hackathon_detail_out(refreshed, current_user)
 
 
 @router.get("", response_model=List[HackathonOut], summary="Public Explore Hackathons")

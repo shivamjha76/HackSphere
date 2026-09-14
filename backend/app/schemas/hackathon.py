@@ -96,3 +96,38 @@ class HackathonRegistrationOut(BaseModel):
 class RegistrationStatusOut(BaseModel):
     is_registered: bool
     registration_id: Optional[int] = None
+
+
+class CriterionCreatePayload(BaseModel):
+    name: str
+    description: Optional[str] = None
+    max_score: int = 20
+    weight: float = 1.0
+
+
+class HackathonCreatePayload(BaseModel):
+    title: str
+    slug: Optional[str] = None
+    tagline: Optional[str] = None
+    short_description: Optional[str] = None
+    detailed_description: Optional[str] = None
+    theme: Optional[str] = None
+    mode: str = "online"  # "online" | "in_person" | "hybrid"
+    status: str = "draft"  # "draft" | "published" | "live"
+    visibility: str = "public"
+    min_team_size: int = 1
+    max_team_size: int = 4
+    max_participants: Optional[int] = None
+    prize_pool_summary: Optional[str] = None
+    rules: Optional[str] = None
+    eligibility: Optional[str] = None
+    registration_start: Optional[datetime] = None
+    registration_end: Optional[datetime] = None
+    event_start: Optional[datetime] = None
+    event_end: Optional[datetime] = None
+    submission_start: Optional[datetime] = None
+    submission_end: Optional[datetime] = None
+    judging_start: Optional[datetime] = None
+    judging_end: Optional[datetime] = None
+    result_date: Optional[datetime] = None
+    criteria: Optional[List[CriterionCreatePayload]] = None
