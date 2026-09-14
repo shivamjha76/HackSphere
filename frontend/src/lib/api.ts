@@ -470,3 +470,111 @@ export const teamsApi = {
   },
 };
 
+export interface SubmissionCreatePayload {
+  team_id: number;
+  project_title: string;
+  tagline?: string | null;
+  description?: string | null;
+  github_url?: string | null;
+  live_demo_url?: string | null;
+  video_url?: string | null;
+  presentation_url?: string | null;
+  attachment_url?: string | null;
+  is_final?: boolean;
+}
+
+export interface SubmissionUpdatePayload {
+  project_title?: string | null;
+  tagline?: string | null;
+  description?: string | null;
+  github_url?: string | null;
+  live_demo_url?: string | null;
+  video_url?: string | null;
+  presentation_url?: string | null;
+  attachment_url?: string | null;
+  is_final?: boolean | null;
+}
+
+export interface SubmissionDetailOut {
+  id: number;
+  submission_code: string;
+  team_id: number;
+  team_name: string;
+  hackathon_id: number;
+  hackathon_title: string;
+  hackathon_slug: string;
+  project_title: string;
+  tagline?: string | null;
+  description?: string | null;
+  github_url?: string | null;
+  live_demo_url?: string | null;
+  video_url?: string | null;
+  presentation_url?: string | null;
+  attachment_url?: string | null;
+  version: number;
+  is_final: boolean;
+  is_locked: boolean;
+  status: string;
+  submitted_at: string;
+  can_edit: boolean;
+}
+
+export interface SubmissionSummaryOut {
+  id: number;
+  submission_code: string;
+  team_id: number;
+  team_name: string;
+  hackathon_id: number;
+  hackathon_title: string;
+  hackathon_slug: string;
+  project_title: string;
+  tagline?: string | null;
+  status: string;
+  version: number;
+  is_locked: boolean;
+  submitted_at: string;
+}
+
+export const submissionsApi = {
+  create: async (payload: SubmissionCreatePayload): Promise<SubmissionDetailOut> => {
+    return apiFetch<SubmissionDetailOut>("/submissions", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  update: async (
+    submissionId: number,
+    payload: SubmissionUpdatePayload
+  ): Promise<SubmissionDetailOut> => {
+    return apiFetch<SubmissionDetailOut>(`/submissions/${submissionId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getMySubmissions: async (): Promise<SubmissionSummaryOut[]> => {
+    return apiFetch<SubmissionSummaryOut[]>("/submissions/my", {
+      method: "GET",
+    });
+  },
+
+  getDetail: async (submissionId: number): Promise<SubmissionDetailOut> => {
+    return apiFetch<SubmissionDetailOut>(`/submissions/${submissionId}`, {
+      method: "GET",
+    });
+  },
+
+  getByTeamId: async (teamId: number): Promise<SubmissionDetailOut | null> => {
+    return apiFetch<SubmissionDetailOut | null>(`/submissions/team/${teamId}`, {
+      method: "GET",
+    });
+  },
+
+  lock: async (submissionId: number): Promise<SubmissionDetailOut> => {
+    return apiFetch<SubmissionDetailOut>(`/submissions/${submissionId}/lock`, {
+      method: "POST",
+    });
+  },
+};
+

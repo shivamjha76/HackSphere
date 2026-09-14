@@ -258,9 +258,19 @@ export default function TeamDetailPage() {
 
                 <p className="text-xs text-slate-300 leading-relaxed">
                   {team.has_submission
-                    ? "Your squad has successfully submitted deliverables for evaluation. Judges will review after the submission deadline."
-                    : "Once your team completes your solution, the Squad Captain can lock deliverables (GitHub repo, demo link, presentation) for judging."}
+                    ? "Your squad has submitted deliverables for evaluation. You can review or edit deliverables before the deadline."
+                    : "Once your team completes your solution, submit your GitHub repo, live demo, and pitch deck for judging."}
                 </p>
+
+                <div className="pt-2 flex justify-end">
+                  <Link
+                    href={`/teams/${team.id}/submit`}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-600/20 flex items-center gap-1.5 transition-all hover:scale-[1.02]"
+                  >
+                    <FileCheck2 className="w-3.5 h-3.5" />
+                    <span>{team.has_submission ? "Review Deliverables" : "Submit Project Deliverables"}</span>
+                  </Link>
+                </div>
               </div>
             </div>
 
