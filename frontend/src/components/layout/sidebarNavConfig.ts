@@ -208,6 +208,11 @@ export const SIDEBAR_NAV_CONFIGS: Record<string, RoleSidebarConfig> = {
             title: "Organization Settings",
             icon: Building2,
           },
+          {
+            id: "team-members",
+            title: "Team Members",
+            icon: Users,
+          },
         ],
       },
     ],

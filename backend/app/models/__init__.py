@@ -1,7 +1,7 @@
 """Central models registry for HackSphere."""
 from app.db.base_class import Base, TimestampMixin
 from app.models.user import User, Role, UserRole
-from app.models.organization import Organization, OrganizationMember
+from app.models.organization import Organization, OrganizationMember, ActivityLog
 from app.models.hackathon import Hackathon, HackathonRegistration
 from app.models.team import Team, TeamMember
 from app.models.submission import Submission
@@ -24,6 +24,7 @@ __all__ = [
     "UserRole",
     "Organization",
     "OrganizationMember",
+    "ActivityLog",
     "Hackathon",
     "HackathonRegistration",
     "Team",

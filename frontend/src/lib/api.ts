@@ -1558,6 +1558,109 @@ export const reportsApi = {
   },
 };
 
+export interface OrgMemberOut {
+  id: number;
+  user_id: number;
+  full_name: string;
+  email: string;
+  role: "owner" | "admin" | "moderator" | "viewer" | string;
+  joined_at: string;
+  status: string;
+}
+
+export interface InviteMemberIn {
+  email: string;
+  full_name: string;
+  role: "admin" | "moderator" | "viewer" | string;
+}
+
+export interface ActivityLogOut {
+  id: number;
+  organization_id: number;
+  user_id?: number | null;
+  user_name: string;
+  action: string;
+  details: string;
+  ip_address: string;
+  created_at: string;
+}
+
+export interface ActivityLogsListOut {
+  logs: ActivityLogOut[];
+  total_count: number;
+  page: number;
+  page_size: number;
+  available_actions: string[];
+}
+
+export interface TeamMembersOverviewOut {
+  organization_id: number;
+  organization_name: string;
+  is_verified: boolean;
+  members: OrgMemberOut[];
+  total_members: number;
+  roles_summary: {
+    owner: number;
+    admin: number;
+    moderator: number;
+    viewer: number;
+    [key: string]: number;
+  };
+}
+
+export const teamMembersApi = {
+  getMyMembers: async (): Promise<TeamMembersOverviewOut> => {
+    return apiFetch<TeamMembersOverviewOut>("/organizations/my/members");
+  },
+
+  inviteMember: async (payload: InviteMemberIn): Promise<OrgMemberOut> => {
+    return apiFetch<OrgMemberOut>("/organizations/my/members/invite", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateMemberRole: async (
+    memberId: number,
+    role: string
+  ): Promise<OrgMemberOut> => {
+    return apiFetch<OrgMemberOut>(`/organizations/my/members/${memberId}/role`, {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+    });
+  },
+
+  removeMember: async (memberId: number): Promise<{ message: string }> => {
+    return apiFetch<{ message: string }>(
+      `/organizations/my/members/${memberId}`,
+      {
+        method: "DELETE",
+      }
+    );
+  },
+
+  getActivityLogs: async (params?: {
+    search?: string;
+    action?: string;
+    days?: number;
+    page?: number;
+    page_size?: number;
+  }): Promise<ActivityLogsListOut> => {
+    const query = new URLSearchParams();
+    if (params?.search) query.append("search", params.search);
+    if (params?.action && params.action.toLowerCase() !== "all" && params.action.toLowerCase() !== "all actions") {
+      query.append("action", params.action);
+    }
+    if (params?.days) query.append("days", params.days.toString());
+    if (params?.page) query.append("page", params.page.toString());
+    if (params?.page_size) query.append("page_size", params.page_size.toString());
+
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return apiFetch<ActivityLogsListOut>(`/organizations/my/activity-logs${qs}`);
+  },
+};
+
+
 
 
 

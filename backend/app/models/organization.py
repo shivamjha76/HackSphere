@@ -38,6 +38,9 @@ class Organization(Base, TimestampMixin):
     hackathons: Mapped[List["Hackathon"]] = relationship(
         "Hackathon", back_populates="organization", cascade="all, delete-orphan"
     )
+    activity_logs: Mapped[List["ActivityLog"]] = relationship(
+        "ActivityLog", back_populates="organization", cascade="all, delete-orphan"
+    )
 
 
 class OrganizationMember(Base, TimestampMixin):
@@ -63,3 +66,27 @@ class OrganizationMember(Base, TimestampMixin):
     # Relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="members")
     user: Mapped["User"] = relationship("User", back_populates="organization_memberships")
+
+
+class ActivityLog(Base, TimestampMixin):
+    """
+    Audit and activity log tracking key organization actions per UI Screen #51.
+    """
+    __tablename__ = "activity_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    organization_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    user_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    action: Mapped[str] = mapped_column(String(100), nullable=False)
+    details: Mapped[str] = mapped_column(Text, nullable=False)
+    ip_address: Mapped[str] = mapped_column(String(50), default="127.0.0.1", nullable=False)
+
+    # Relationships
+    organization: Mapped["Organization"] = relationship("Organization", back_populates="activity_logs")
+    user: Mapped[Optional["User"]] = relationship("User")
+

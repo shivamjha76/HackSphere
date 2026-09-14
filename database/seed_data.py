@@ -15,6 +15,7 @@ from app.models import (
     UserRole,
     Organization,
     OrganizationMember,
+    ActivityLog,
     Hackathon,
     HackathonRegistration,
     Team,
@@ -145,6 +146,46 @@ def seed_database():
                 "level": 4,
                 "is_superuser": False,
             },
+            {
+                "email": "priya.sharma@technovalabs.dev",
+                "full_name": "Priya Sharma",
+                "password": "UserPass123!",
+                "role": "organizer",
+                "bio": "Lead Operations & Hackathon Coordinator at TechNova Labs.",
+                "xp": 2100,
+                "level": 5,
+                "is_superuser": False,
+            },
+            {
+                "email": "aman.kumar@technovalabs.dev",
+                "full_name": "Aman Kumar",
+                "password": "UserPass123!",
+                "role": "organizer",
+                "bio": "Technical Evaluation Moderator & Community Lead.",
+                "xp": 1400,
+                "level": 3,
+                "is_superuser": False,
+            },
+            {
+                "email": "neha.saxena@technovalabs.dev",
+                "full_name": "Neha Saxena",
+                "password": "UserPass123!",
+                "role": "organizer",
+                "bio": "Developer Relations & Hackathon Moderator.",
+                "xp": 1600,
+                "level": 4,
+                "is_superuser": False,
+            },
+            {
+                "email": "karan.verma@technovalabs.dev",
+                "full_name": "Karan Verma",
+                "password": "UserPass123!",
+                "role": "organizer",
+                "bio": "Audit & Compliance Reviewer at TechNova Labs.",
+                "xp": 1200,
+                "level": 3,
+                "is_superuser": False,
+            },
         ]
 
         users = {}
@@ -199,15 +240,145 @@ def seed_database():
             db.add(org)
             db.flush()
 
-            # Add Organizer as Owner
-            org_member = OrganizationMember(
-                organization_id=org.id,
-                user_id=users["organizer@technova.com"].id,
-                role="owner",
-            )
-            db.add(org_member)
-            db.flush()
-        print("[+] Verified Organization: TechNova Labs (Verified Owner assigned).")
+        # Add Organization Members
+        members_config = [
+            ("organizer@technova.com", "owner"),
+            ("priya.sharma@technovalabs.dev", "admin"),
+            ("aman.kumar@technovalabs.dev", "moderator"),
+            ("neha.saxena@technovalabs.dev", "moderator"),
+            ("karan.verma@technovalabs.dev", "viewer"),
+        ]
+        for email, m_role in members_config:
+            if email in users:
+                existing_m = db.query(OrganizationMember).filter_by(
+                    organization_id=org.id, user_id=users[email].id
+                ).first()
+                if not existing_m:
+                    db.add(OrganizationMember(
+                        organization_id=org.id,
+                        user_id=users[email].id,
+                        role=m_role,
+                    ))
+        db.flush()
+
+        # Seed Activity Logs matching Screen #51
+        activity_records = [
+            {
+                "user_name": "Rohan Mehta",
+                "user_email": "rohan.mehta@judge.com",
+                "action": "Added Team Member",
+                "details": "Added Priya Sharma as Moderator",
+                "ip_address": "103.45.67.89",
+                "offset_hours": 2,
+            },
+            {
+                "user_name": "Priya Sharma",
+                "user_email": "priya.sharma@technovalabs.dev",
+                "action": "Updated Role",
+                "details": "Changed role of Aman Kumar from Viewer to Moderator",
+                "ip_address": "103.45.67.89",
+                "offset_hours": 5,
+            },
+            {
+                "user_name": "Aman Kumar",
+                "user_email": "aman.kumar@technovalabs.dev",
+                "action": "Edited Draft",
+                "details": "Updated details of 'Codecraft 3.0' hackathon",
+                "ip_address": "117.201.34.22",
+                "offset_hours": 26,
+            },
+            {
+                "user_name": "Neha Saxena",
+                "user_email": "neha.saxena@technovalabs.dev",
+                "action": "Deleted Draft",
+                "details": "Deleted draft 'AI Innovators Hackathon'",
+                "ip_address": "152.58.87.11",
+                "offset_hours": 30,
+            },
+            {
+                "user_name": "Karan Verma",
+                "user_email": "karan.verma@technovalabs.dev",
+                "action": "Changed Settings",
+                "details": "Updated organization preferences",
+                "ip_address": "103.45.67.89",
+                "offset_hours": 52,
+            },
+            {
+                "user_name": "Priya Sharma",
+                "user_email": "priya.sharma@technovalabs.dev",
+                "action": "Logged In",
+                "details": "User logged in successfully",
+                "ip_address": "117.201.34.22",
+                "offset_hours": 56,
+            },
+            {
+                "user_name": "Rohan Mehta",
+                "user_email": "rohan.mehta@judge.com",
+                "action": "Reviewed Submission",
+                "details": "Reviewed submission for Codecraft 3.0",
+                "ip_address": "103.45.67.89",
+                "offset_hours": 74,
+            },
+            {
+                "user_name": "TechNova Lead Organizer",
+                "user_email": "organizer@technova.com",
+                "action": "Announced Winners",
+                "details": "Announced Winners for AI Summit Hackathon",
+                "ip_address": "103.45.67.89",
+                "offset_hours": 78,
+            },
+            {
+                "user_name": "TechNova Lead Organizer",
+                "user_email": "organizer@technova.com",
+                "action": "Added Team Member",
+                "details": "Invited Neha Saxena to organization workspace",
+                "ip_address": "103.45.67.89",
+                "offset_hours": 102,
+            },
+            {
+                "user_name": "Priya Sharma",
+                "user_email": "priya.sharma@technovalabs.dev",
+                "action": "Edited Draft",
+                "details": "Configured judging rubric for AI Hack Summit",
+                "ip_address": "103.45.67.89",
+                "offset_hours": 126,
+            },
+            {
+                "user_name": "TechNova Lead Organizer",
+                "user_email": "organizer@technova.com",
+                "action": "Changed Settings",
+                "details": "Enabled GitHub OAuth & Auto-Shortlisting pipeline",
+                "ip_address": "103.45.67.89",
+                "offset_hours": 168,
+            },
+            {
+                "user_name": "TechNova Lead Organizer",
+                "user_email": "organizer@technova.com",
+                "action": "Logged In",
+                "details": "Admin session authenticated via 2FA verification",
+                "ip_address": "103.45.67.89",
+                "offset_hours": 192,
+            },
+        ]
+        now_seed = datetime.now(timezone.utc)
+        for rec in activity_records:
+            existing_log = db.query(ActivityLog).filter_by(
+                organization_id=org.id, details=rec["details"]
+            ).first()
+            if not existing_log:
+                u_id = users[rec["user_email"]].id if rec["user_email"] in users else None
+                log_item = ActivityLog(
+                    organization_id=org.id,
+                    user_id=u_id,
+                    user_name=rec["user_name"],
+                    action=rec["action"],
+                    details=rec["details"],
+                    ip_address=rec["ip_address"],
+                    created_at=now_seed - timedelta(hours=rec["offset_hours"]),
+                )
+                db.add(log_item)
+        db.flush()
+        print("[+] Verified Organization: TechNova Labs (Roster & Screen #51 Activity Logs seeded).")
 
         # 4. Seed Hackathons
         now = datetime.now(timezone.utc)
