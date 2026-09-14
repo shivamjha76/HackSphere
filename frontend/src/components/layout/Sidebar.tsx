@@ -175,7 +175,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           } else if (item.id === "guidelines") {
                             router.push("/judge/guidelines");
                           } else if (item.id === "leaderboards") {
-                            router.push("/organizer/winners");
+                            router.push("/judge/leaderboards");
                           }
                         } else {
                           if (item.id === "dashboard") router.push("/dashboard");

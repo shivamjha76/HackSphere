@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, Dict
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -18,6 +18,7 @@ from app.models.judging import (
     Evaluation,
     EvaluationScore,
 )
+from app.models.winner import HackathonWinner
 from app.schemas.judge import (
     JudgeDashboardOverviewOut,
     JudgeDashboardStatsOut,
@@ -40,9 +41,14 @@ from app.schemas.judge import (
     JudgingGuidelinesOut,
     ConflictOfInterestPayload,
     ConflictOfInterestOut,
+    ScoreDistributionBracket,
+    JudgeImpactMetrics,
+    LeaderboardRankItem,
+    JudgeLeaderboardOverviewOut,
 )
 
 router = APIRouter()
+
 
 
 
@@ -969,5 +975,362 @@ def declare_conflict_of_interest(
             "The organizing team has been notified and the submission will be reassigned."
         ),
     )
+
+
+def compute_rubric_subscores(submission_ids: List[int], db: Session) -> Dict[int, Dict[str, float]]:
+    """
+    Computes criterion-specific average scores (Innovation, Technical, Presentation)
+    for submissions to support multi-criteria tie-breaker resolution per Roadmap Chapter 22.
+    """
+    if not submission_ids:
+        return {}
+
+    rows = (
+        db.query(
+            Evaluation.submission_id,
+            EvaluationCriteria.name,
+            EvaluationScore.score,
+        )
+        .join(EvaluationScore, EvaluationScore.evaluation_id == Evaluation.id)
+        .join(EvaluationCriteria, EvaluationCriteria.id == EvaluationScore.criterion_id)
+        .filter(Evaluation.submission_id.in_(submission_ids))
+        .all()
+    )
+
+    agg: Dict[int, Dict[str, List[float]]] = {}
+    for sub_id, crit_name, score in rows:
+        c_lower = crit_name.lower()
+        key = None
+        if "innovat" in c_lower:
+            key = "innovation"
+        elif "tech" in c_lower or "code" in c_lower or "architect" in c_lower or "implement" in c_lower:
+            key = "technical"
+        elif "present" in c_lower or "pitch" in c_lower or "impact" in c_lower or "ui" in c_lower or "design" in c_lower:
+            key = "presentation"
+
+        if key:
+            sub_dict = agg.setdefault(sub_id, {})
+            scores_list = sub_dict.setdefault(key, [])
+            scores_list.append(score)
+
+    result: Dict[int, Dict[str, float]] = {}
+    for sub_id, crit_dict in agg.items():
+        result[sub_id] = {
+            k: round(sum(v) / len(v), 1) for k, v in crit_dict.items() if v
+        }
+    return result
+
+
+@router.get("/leaderboards", response_model=JudgeLeaderboardOverviewOut)
+def get_judge_leaderboard(
+    hackathon_id: Optional[int] = Query(None, description="Target hackathon ID"),
+    track: Optional[str] = Query(None, description="Filter by track"),
+    filter_mode: Optional[str] = Query("all", description="'all' | 'my_evaluations' | 'flagged'"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Tournament Leaderboards & Consistency Analysis Console.
+    Calculates live team rankings, multi-criteria tie breaks (Chapter 22),
+    score anomaly/discrepancy detection (Chapter 21), 4-bracket score distribution,
+    and individual judge consistency metrics per UI Screen #49.
+    """
+    verify_judge_access(current_user)
+
+    # 1. Resolve target hackathon
+    hackathon: Optional[Hackathon] = None
+    if hackathon_id:
+        hackathon = db.query(Hackathon).filter(Hackathon.id == hackathon_id).first()
+        if not hackathon:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Hackathon with ID {hackathon_id} not found.",
+            )
+    else:
+        # Check judge's appointed hackathons first
+        judge_rec = (
+            db.query(HackathonJudge)
+            .filter(HackathonJudge.user_id == current_user.id)
+            .first()
+        )
+        if judge_rec:
+            hackathon = db.query(Hackathon).filter(Hackathon.id == judge_rec.hackathon_id).first()
+        if not hackathon:
+            hackathon = db.query(Hackathon).order_by(Hackathon.id.desc()).first()
+
+    if not hackathon:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No active hackathons found for leaderboard generation.",
+        )
+
+    # 2. Timing and status
+    now = datetime.now(timezone.utc)
+    judging_end = ensure_utc(hackathon.judging_end)
+    days_rem = max(0, (judging_end - now).days) if judging_end else 0
+
+    # 3. Fetch all teams for this hackathon
+    teams = db.query(Team).filter(Team.hackathon_id == hackathon.id).all()
+    total_teams = len(teams)
+    team_map = {t.id: t for t in teams}
+    tracks = sorted(list(set(t.track for t in teams if t.track)))
+
+    # 4. Fetch all submissions
+    submissions = db.query(Submission).filter(Submission.hackathon_id == hackathon.id).all()
+    sub_ids = [s.id for s in submissions]
+
+    # 5. Fetch all evaluations for these submissions
+    evaluations = (
+        db.query(Evaluation)
+        .filter(Evaluation.submission_id.in_(sub_ids))
+        .all()
+        if sub_ids
+        else []
+    )
+    evals_by_sub: Dict[int, List[Evaluation]] = {}
+    for ev in evaluations:
+        evals_by_sub.setdefault(ev.submission_id, []).append(ev)
+
+    # 6. Current Judge appointment ID for this hackathon
+    current_judge_rec = (
+        db.query(HackathonJudge)
+        .filter(
+            HackathonJudge.user_id == current_user.id,
+            HackathonJudge.hackathon_id == hackathon.id,
+        )
+        .first()
+    )
+    current_judge_id = current_judge_rec.id if current_judge_rec else None
+
+    # Appointed active judges count
+    appointed_judges_count = (
+        db.query(HackathonJudge)
+        .filter(HackathonJudge.hackathon_id == hackathon.id, HackathonJudge.status == "active")
+        .count()
+    )
+    required_evaluations = min(3, max(1, appointed_judges_count))
+
+    # 7. Existing Winners Map
+    winners_map = {
+        w.team_id: w
+        for w in db.query(HackathonWinner).filter(HackathonWinner.hackathon_id == hackathon.id).all()
+    }
+
+    # 8. Rubric subscores
+    subscore_map = compute_rubric_subscores(sub_ids, db)
+
+    # 9. Compute individual leaderboard items
+    raw_ranked_items = []
+    scores_published_count = 0
+    in_progress_scores_count = 0
+    pending_scores_count = 0
+
+    for sub in submissions:
+        sub_evals = evals_by_sub.get(sub.id, [])
+        eval_count = len(sub_evals)
+
+        if eval_count >= required_evaluations:
+            scores_published_count += 1
+        elif eval_count > 0:
+            in_progress_scores_count += 1
+        else:
+            pending_scores_count += 1
+
+        avg_score = (
+            round(sum(e.total_score for e in sub_evals) / eval_count, 1)
+            if eval_count > 0
+            else 0.0
+        )
+
+        # Chapter 21 Discrepancy Detection: spread >= 20.0
+        is_discrepancy = False
+        flag_reason = None
+        if eval_count >= 2:
+            scores_list = [e.total_score for e in sub_evals]
+            spread = max(scores_list) - min(scores_list)
+            if spread >= 20.0:
+                is_discrepancy = True
+                flag_reason = f"Score spread of {round(spread, 1)} pts across judges (Chapter 21 Review Required)"
+
+        # Or if any individual evaluation was flagged
+        if not is_discrepancy:
+            flagged_ev = next((e for e in sub_evals if e.is_flagged_for_review), None)
+            if flagged_ev:
+                is_discrepancy = True
+                flag_reason = flagged_ev.flag_reason or "Evaluation flagged for organizer review"
+
+        # Current judge evaluation info
+        cur_eval = next((e for e in sub_evals if current_judge_id and e.judge_id == current_judge_id), None)
+        cur_judge_evaluated = cur_eval is not None
+        cur_judge_score = round(cur_eval.total_score, 1) if cur_eval else None
+        cur_judge_deviation = (
+            round(cur_judge_score - avg_score, 1)
+            if (cur_judge_score is not None and avg_score > 0)
+            else None
+        )
+
+        team = team_map.get(sub.team_id)
+        team_name = team.name if team else f"Team {sub.team_id}"
+        team_code = team.invite_code if team else f"CC30-{sub.team_id:03d}"
+        team_track = team.track if team else "General"
+
+        winner_rec = winners_map.get(sub.team_id)
+        subscores = subscore_map.get(sub.id, {})
+
+        raw_ranked_items.append({
+            "team_id": sub.team_id,
+            "team_name": team_name,
+            "team_code": team_code,
+            "submission_id": sub.id,
+            "project_title": sub.project_title,
+            "tagline": sub.tagline,
+            "track": team_track,
+            "demo_url": sub.live_demo_url,
+            "github_url": sub.github_url,
+            "evaluations_count": eval_count,
+            "required_evaluations": required_evaluations,
+            "average_score": avg_score,
+            "innovation_score": subscores.get("innovation"),
+            "technical_score": subscores.get("technical"),
+            "presentation_score": subscores.get("presentation"),
+            "is_flagged_for_review": is_discrepancy,
+            "flag_reason": flag_reason,
+            "current_judge_evaluated": cur_judge_evaluated,
+            "current_judge_score": cur_judge_score,
+            "current_judge_deviation": cur_judge_deviation,
+            "is_winner": winner_rec is not None,
+            "winner_rank": winner_rec.rank if winner_rec else None,
+            "winner_title": winner_rec.title if winner_rec else None,
+        })
+
+    # Sort descending by average score, then innovation, technical, and evaluations count
+    raw_ranked_items.sort(
+        key=lambda x: (
+            x["average_score"],
+            x["innovation_score"] or 0.0,
+            x["technical_score"] or 0.0,
+            x["evaluations_count"],
+        ),
+        reverse=True,
+    )
+
+    # Assign sequential ranks
+    for idx, item in enumerate(raw_ranked_items, start=1):
+        item["rank"] = idx
+
+    # 10. Calculate Score Distribution Brackets (Screen #49)
+    scored_items = [it for it in raw_ranked_items if it["average_score"] > 0]
+    total_scored = len(scored_items)
+
+    b_80_100 = sum(1 for it in scored_items if it["average_score"] >= 80.0)
+    b_60_80 = sum(1 for it in scored_items if 60.0 <= it["average_score"] < 80.0)
+    b_40_60 = sum(1 for it in scored_items if 40.0 <= it["average_score"] < 60.0)
+    b_below_40 = sum(1 for it in scored_items if it["average_score"] < 40.0)
+
+    def calc_pct(c: int) -> float:
+        return round((c / total_scored * 100), 1) if total_scored > 0 else 0.0
+
+    score_distribution = [
+        ScoreDistributionBracket(
+            label="80 - 100",
+            count=b_80_100,
+            percentage=calc_pct(b_80_100),
+            color="emerald",
+        ),
+        ScoreDistributionBracket(
+            label="60 - 80",
+            count=b_60_80,
+            percentage=calc_pct(b_60_80),
+            color="blue",
+        ),
+        ScoreDistributionBracket(
+            label="40 - 60",
+            count=b_40_60,
+            percentage=calc_pct(b_40_60),
+            color="amber",
+        ),
+        ScoreDistributionBracket(
+            label="Below 40",
+            count=b_below_40,
+            percentage=calc_pct(b_below_40),
+            color="rose",
+        ),
+    ]
+
+    # 11. Calculate Judge Impact & Consistency Metrics (Screen #49)
+    my_evals = [e for e in evaluations if current_judge_id and e.judge_id == current_judge_id]
+    evals_submitted = len(my_evals)
+
+    if evals_submitted > 0:
+        deviations = []
+        agreements = 0
+        evaluated_sub_ids = []
+        for me in my_evals:
+            evaluated_sub_ids.append(me.submission_id)
+            sub_evals = evals_by_sub.get(me.submission_id, [])
+            if sub_evals:
+                consensus_avg = sum(e.total_score for e in sub_evals) / len(sub_evals)
+                dev = me.total_score - consensus_avg
+                deviations.append(dev)
+                if abs(dev) <= 5.0:
+                    agreements += 1
+
+        avg_deviation = round(sum(deviations) / len(deviations), 1) if deviations else 0.0
+        agreement_rate = round((agreements / evals_submitted) * 100, 1)
+        consistency_score = round(max(50.0, min(100.0, 100.0 - abs(avg_deviation) * 3)), 1)
+
+        if abs(avg_deviation) <= 2.0:
+            strictness_label = "Balanced"
+        elif avg_deviation < -2.0:
+            strictness_label = "Slightly Rigorous" if avg_deviation >= -5.0 else "Strict"
+        else:
+            strictness_label = "Generous"
+
+        judge_impact = JudgeImpactMetrics(
+            evaluations_submitted=evals_submitted,
+            consistency_score=consistency_score,
+            average_deviation=avg_deviation,
+            strictness_label=strictness_label,
+            agreement_rate=agreement_rate,
+            evaluated_sub_ids=evaluated_sub_ids,
+        )
+    else:
+        judge_impact = JudgeImpactMetrics(
+            evaluations_submitted=0,
+            consistency_score=100.0,
+            average_deviation=0.0,
+            strictness_label="Calibrated",
+            agreement_rate=100.0,
+            evaluated_sub_ids=[],
+        )
+
+    # 12. Apply requested track & filter_mode
+    filtered_items = raw_ranked_items
+    if track and track.lower() != "all":
+        filtered_items = [it for it in filtered_items if (it["track"] or "").lower() == track.lower()]
+
+    if filter_mode == "my_evaluations":
+        filtered_items = [it for it in filtered_items if it["current_judge_evaluated"]]
+    elif filter_mode == "flagged":
+        filtered_items = [it for it in filtered_items if it["is_flagged_for_review"]]
+
+    rankings_out = [LeaderboardRankItem(**it) for it in filtered_items]
+
+    return JudgeLeaderboardOverviewOut(
+        hackathon_id=hackathon.id,
+        hackathon_title=hackathon.title,
+        hackathon_slug=hackathon.slug,
+        total_teams=total_teams,
+        scores_published=scores_published_count,
+        in_progress_scores=in_progress_scores_count,
+        pending_scores=pending_scores_count,
+        days_remaining=days_rem,
+        judging_status="live" if days_rem > 0 else "completed",
+        tracks=tracks,
+        rankings=rankings_out,
+        score_distribution=score_distribution,
+        judge_impact=judge_impact,
+    )
+
 
 

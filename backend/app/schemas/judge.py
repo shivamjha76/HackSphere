@@ -235,3 +235,71 @@ class ConflictOfInterestOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ScoreDistributionBracket(BaseModel):
+    label: str  # "80-100", "60-80", "40-60", "Below 40"
+    count: int = 0
+    percentage: float = 0.0
+    color: str = "blue"
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class JudgeImpactMetrics(BaseModel):
+    evaluations_submitted: int = 0
+    consistency_score: float = 100.0
+    average_deviation: float = 0.0
+    strictness_label: str = "Balanced"  # "Balanced", "Slightly Rigorous", "Generous", "Calibrated"
+    agreement_rate: float = 100.0  # Percentage within ±5 points of consensus
+    evaluated_sub_ids: List[int] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LeaderboardRankItem(BaseModel):
+    rank: int
+    team_id: int
+    team_name: str
+    team_code: str
+    submission_id: int
+    project_title: str
+    tagline: Optional[str] = None
+    track: Optional[str] = None
+    demo_url: Optional[str] = None
+    github_url: Optional[str] = None
+    evaluations_count: int = 0
+    required_evaluations: int = 3
+    average_score: float = 0.0
+    innovation_score: Optional[float] = None
+    technical_score: Optional[float] = None
+    presentation_score: Optional[float] = None
+    is_flagged_for_review: bool = False
+    flag_reason: Optional[str] = None
+    current_judge_evaluated: bool = False
+    current_judge_score: Optional[float] = None
+    current_judge_deviation: Optional[float] = None
+    is_winner: bool = False
+    winner_rank: Optional[int] = None
+    winner_title: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class JudgeLeaderboardOverviewOut(BaseModel):
+    hackathon_id: int
+    hackathon_title: str
+    hackathon_slug: str
+    total_teams: int = 0
+    scores_published: int = 0
+    in_progress_scores: int = 0
+    pending_scores: int = 0
+    days_remaining: int = 0
+    judging_status: str = "in_progress"
+    tracks: List[str] = []
+    rankings: List[LeaderboardRankItem] = []
+    score_distribution: List[ScoreDistributionBracket] = []
+    judge_impact: JudgeImpactMetrics
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+

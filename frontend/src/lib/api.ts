@@ -1370,6 +1370,19 @@ export const judgeApi = {
       body: JSON.stringify(payload),
     });
   },
+
+  getLeaderboard: async (
+    hackathonId?: number,
+    track?: string,
+    filterMode?: string
+  ): Promise<JudgeLeaderboardOverviewOut> => {
+    const params = new URLSearchParams();
+    if (hackathonId) params.append("hackathon_id", String(hackathonId));
+    if (track && track !== "all") params.append("track", track);
+    if (filterMode && filterMode !== "all") params.append("filter_mode", filterMode);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return apiFetch<JudgeLeaderboardOverviewOut>(`/judge/leaderboards${qs}`);
+  },
 };
 
 export interface JudgingRuleItem {
@@ -1417,6 +1430,66 @@ export interface ConflictOfInterestOut {
   status: string;
   message: string;
 }
+
+export interface ScoreDistributionBracket {
+  label: string;
+  count: number;
+  percentage: number;
+  color: string;
+}
+
+export interface JudgeImpactMetrics {
+  evaluations_submitted: number;
+  consistency_score: number;
+  average_deviation: number;
+  strictness_label: string;
+  agreement_rate: number;
+  evaluated_sub_ids: number[];
+}
+
+export interface LeaderboardRankItem {
+  rank: number;
+  team_id: number;
+  team_name: string;
+  team_code: string;
+  submission_id: number;
+  project_title: string;
+  tagline?: string | null;
+  track?: string | null;
+  demo_url?: string | null;
+  github_url?: string | null;
+  evaluations_count: number;
+  required_evaluations: number;
+  average_score: number;
+  innovation_score?: number | null;
+  technical_score?: number | null;
+  presentation_score?: number | null;
+  is_flagged_for_review: boolean;
+  flag_reason?: string | null;
+  current_judge_evaluated: boolean;
+  current_judge_score?: number | null;
+  current_judge_deviation?: number | null;
+  is_winner: boolean;
+  winner_rank?: number | null;
+  winner_title?: string | null;
+}
+
+export interface JudgeLeaderboardOverviewOut {
+  hackathon_id: number;
+  hackathon_title: string;
+  hackathon_slug: string;
+  total_teams: number;
+  scores_published: number;
+  in_progress_scores: number;
+  pending_scores: number;
+  days_remaining: number;
+  judging_status: string;
+  tracks: string[];
+  rankings: LeaderboardRankItem[];
+  score_distribution: ScoreDistributionBracket[];
+  judge_impact: JudgeImpactMetrics;
+}
+
 
 
 
