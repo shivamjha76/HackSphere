@@ -22,6 +22,10 @@ class ManagedHackathonItemOut(BaseModel):
     mode: str
     status: str
     visibility: str
+    tagline: Optional[str] = None
+    theme: Optional[str] = None
+    short_description: Optional[str] = None
+    budget_or_revenue: Optional[float] = None
     participant_count: int
     submissions_count: int
     teams_count: int

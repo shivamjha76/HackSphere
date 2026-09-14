@@ -506,6 +506,10 @@ export interface ManagedHackathonItemOut {
   mode: string;
   status: string;
   visibility: string;
+  tagline?: string | null;
+  theme?: string | null;
+  short_description?: string | null;
+  budget_or_revenue?: number | null;
   participant_count: number;
   submissions_count: number;
   teams_count: number;

@@ -148,8 +148,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         onSelectNavItem(item.id);
                       } else {
                         if (currentRole === "organizer") {
-                          if (item.id === "dashboard" || item.id === "my-hackathons") {
+                          if (item.id === "dashboard") {
                             router.push("/organizer/dashboard");
+                          } else if (item.id === "my-hackathons") {
+                            router.push("/organizer/hackathons");
                           } else if (item.id === "create-hackathon") {
                             router.push("/organizer/hackathons/create");
                           } else if (item.id === "submissions") {
