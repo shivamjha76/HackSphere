@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from typing import List, Optional
-from sqlalchemy import String, Integer, Boolean, Text, ForeignKey, DateTime
+from sqlalchemy import String, Integer, Boolean, Text, ForeignKey, DateTime, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base, TimestampMixin
 
@@ -26,6 +26,21 @@ class Organization(Base, TimestampMixin):
     state: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     city: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    # Billing & Subscription Tier (Screen #52)
+    plan_tier: Mapped[str] = mapped_column(String(50), default="pro", nullable=False)
+    billing_cycle: Mapped[str] = mapped_column(String(50), default="monthly", nullable=False)
+    plan_price: Mapped[float] = mapped_column(Float, default=999.0, nullable=False)
+    next_billing_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    billing_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    billing_address: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Resource Quotas & Usage (Screen #52)
+    storage_used_gb: Mapped[float] = mapped_column(Float, default=12.4, nullable=False)
+    max_storage_gb: Mapped[float] = mapped_column(Float, default=50.0, nullable=False)
+    max_hackathons: Mapped[int] = mapped_column(Integer, default=20, nullable=False)
+    max_participants: Mapped[int] = mapped_column(Integer, default=10000, nullable=False)
+    max_submissions: Mapped[int] = mapped_column(Integer, default=5000, nullable=False)
 
     created_by_user_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True

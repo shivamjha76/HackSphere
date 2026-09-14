@@ -30,12 +30,41 @@ from app.models import (
     Announcement,
     HackathonWinner,
 )
+from sqlalchemy import text
+
+
+def ensure_sqlite_columns(eng):
+    """Safely migrate missing columns into SQLite tables."""
+    try:
+        with eng.connect() as conn:
+            res = conn.execute(text("PRAGMA table_info(organizations)"))
+            existing_cols = {row[1] for row in res.fetchall()}
+            columns_to_add = [
+                ("plan_tier", "VARCHAR(50) DEFAULT 'pro'"),
+                ("billing_cycle", "VARCHAR(50) DEFAULT 'monthly'"),
+                ("plan_price", "FLOAT DEFAULT 999.0"),
+                ("next_billing_date", "DATETIME"),
+                ("billing_email", "VARCHAR(255)"),
+                ("billing_address", "TEXT"),
+                ("storage_used_gb", "FLOAT DEFAULT 12.4"),
+                ("max_storage_gb", "FLOAT DEFAULT 50.0"),
+                ("max_hackathons", "INTEGER DEFAULT 20"),
+                ("max_participants", "INTEGER DEFAULT 10000"),
+                ("max_submissions", "INTEGER DEFAULT 5000"),
+            ]
+            for col_name, col_type in columns_to_add:
+                if col_name not in existing_cols:
+                    conn.execute(text(f"ALTER TABLE organizations ADD COLUMN {col_name} {col_type}"))
+            conn.commit()
+    except Exception as e:
+        print(f"[!] Migration notice: {e}")
 
 
 def seed_database():
     print("[*] Starting HackSphere database seeding...")
     # Ensure tables exist
     Base.metadata.create_all(bind=engine)
+    ensure_sqlite_columns(engine)
     db = SessionLocal()
 
     try:
@@ -239,6 +268,20 @@ def seed_database():
             )
             db.add(org)
             db.flush()
+
+        # Update / ensure billing attributes matching Screen #52
+        org.plan_tier = "pro"
+        org.billing_cycle = "monthly"
+        org.plan_price = 999.0
+        org.next_billing_date = datetime(2025, 6, 12, tzinfo=timezone.utc)
+        org.billing_email = "billing@technovalabs.dev"
+        org.billing_address = "TechNova Labs, Jaipur, Rajasthan, India"
+        org.storage_used_gb = 12.4
+        org.max_storage_gb = 50.0
+        org.max_hackathons = 20
+        org.max_participants = 10000
+        org.max_submissions = 5000
+        db.flush()
 
         # Add Organization Members
         members_config = [

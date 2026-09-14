@@ -1660,6 +1660,120 @@ export const teamMembersApi = {
   },
 };
 
+export interface OrganizationBillingUsageOut {
+  active_hackathons: number;
+  max_hackathons: number;
+  participants: number;
+  max_participants: number;
+  submissions: number;
+  max_submissions: number;
+  storage_used_gb: number;
+  max_storage_gb: number;
+  reset_date_label: string;
+}
+
+export interface PaymentMethodOut {
+  id: string;
+  brand: string;
+  last4: string;
+  exp_month: number;
+  exp_year: number;
+  is_default: boolean;
+}
+
+export interface InvoiceItemOut {
+  invoice_id: string;
+  date: string;
+  plan_name: string;
+  amount: number;
+  currency: string;
+  status: string;
+  download_url: string;
+}
+
+export interface OrganizationBillingOverviewOut {
+  organization_id: number;
+  organization_name: string;
+  is_verified: boolean;
+  plan_tier: string;
+  plan_price: number;
+  billing_cycle: string;
+  next_billing_date?: string | null;
+  next_billing_label: string;
+  billing_email: string;
+  billing_address: string;
+  usage: OrganizationBillingUsageOut;
+  payment_methods: PaymentMethodOut[];
+  invoices: InvoiceItemOut[];
+}
+
+export interface UpdateBillingProfileIn {
+  billing_email: string;
+  billing_address: string;
+}
+
+export interface OrganizationSettingsProfileOut {
+  id: number;
+  name: string;
+  slug: string;
+  org_type: string;
+  description?: string | null;
+  website_url?: string | null;
+  official_email?: string | null;
+  phone?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country: string;
+  is_verified: boolean;
+  logo_url?: string | null;
+  cover_url?: string | null;
+}
+
+export interface UpdateOrgProfileIn {
+  name?: string;
+  description?: string;
+  website_url?: string;
+  phone?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+}
+
+export const orgSettingsApi = {
+  getBillingOverview: async (): Promise<OrganizationBillingOverviewOut> => {
+    return apiFetch<OrganizationBillingOverviewOut>("/organizations/my/billing");
+  },
+
+  updateBillingProfile: async (
+    payload: UpdateBillingProfileIn
+  ): Promise<OrganizationBillingOverviewOut> => {
+    return apiFetch<OrganizationBillingOverviewOut>("/organizations/my/billing", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getProfile: async (): Promise<OrganizationSettingsProfileOut> => {
+    return apiFetch<OrganizationSettingsProfileOut>("/organizations/my/profile");
+  },
+
+  updateProfile: async (
+    payload: UpdateOrgProfileIn
+  ): Promise<OrganizationSettingsProfileOut> => {
+    return apiFetch<OrganizationSettingsProfileOut>("/organizations/my/profile", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  downloadInvoice: async (invoiceId: string): Promise<any> => {
+    return apiFetch(`/organizations/my/billing/invoices/${invoiceId}/download`, {
+      method: "POST",
+    });
+  },
+};
+
+
 
 
 
