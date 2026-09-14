@@ -1154,5 +1154,94 @@ export const winnersApi = {
   },
 };
 
+// ==========================================
+// JUDGE PORTAL & EVALUATION ENGINE TYPES (Step 28)
+// ==========================================
+
+export interface JudgeAssignedHackathonOut {
+  id: number;
+  title: string;
+  slug: string;
+  organization_name: string;
+  mode: string;
+  total_teams: number;
+  judging_end?: string | null;
+  days_remaining: number;
+  pending_reviews_count: number;
+  completed_reviews_count: number;
+}
+
+export interface JudgeSubmissionQueueItemOut {
+  submission_id: number;
+  hackathon_id: number;
+  hackathon_title: string;
+  hackathon_slug: string;
+  team_id: number;
+  team_name: string;
+  team_code: string;
+  project_title: string;
+  tagline?: string | null;
+  submitted_at: string;
+  evaluation_status: "not_started" | "in_progress" | "completed";
+  total_score?: number | null;
+  evaluation_id?: number | null;
+  demo_url?: string | null;
+  github_url?: string | null;
+}
+
+export interface JudgeDashboardStatsOut {
+  completed_evaluations: number;
+  pending_evaluations: number;
+  total_assigned_submissions: number;
+  average_score_given: number;
+}
+
+export interface JudgeUpcomingDeadlineOut {
+  hackathon_id: number;
+  hackathon_title: string;
+  hackathon_slug: string;
+  judging_end?: string | null;
+  days_remaining: number;
+  pending_count: number;
+}
+
+export interface JudgeDashboardOverviewOut {
+  judge_id: number;
+  judge_name: string;
+  expertise?: string | null;
+  stats: JudgeDashboardStatsOut;
+  assigned_hackathons: JudgeAssignedHackathonOut[];
+  submissions_queue: JudgeSubmissionQueueItemOut[];
+  upcoming_deadlines: JudgeUpcomingDeadlineOut[];
+}
+
+export interface JudgeSubmissionsFilterParams {
+  hackathon_id?: number;
+  status?: string;
+  search?: string;
+}
+
+export const judgeApi = {
+  getDashboard: async (): Promise<JudgeDashboardOverviewOut> => {
+    return apiFetch<JudgeDashboardOverviewOut>("/judge/dashboard");
+  },
+
+  getSubmissionsQueue: async (
+    params: JudgeSubmissionsFilterParams = {}
+  ): Promise<JudgeSubmissionQueueItemOut[]> => {
+    const query = new URLSearchParams();
+    if (params.hackathon_id !== undefined) query.set("hackathon_id", String(params.hackathon_id));
+    if (params.status && params.status !== "all") query.set("status", params.status);
+    if (params.search) query.set("search", params.search);
+    const qs = query.toString();
+    return apiFetch<JudgeSubmissionQueueItemOut[]>(`/judge/submissions${qs ? `?${qs}` : ""}`);
+  },
+
+  getAssignedHackathons: async (): Promise<JudgeAssignedHackathonOut[]> => {
+    return apiFetch<JudgeAssignedHackathonOut[]>("/judge/hackathons");
+  },
+};
+
+
 
 

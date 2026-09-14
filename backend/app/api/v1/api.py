@@ -12,6 +12,7 @@ from app.api.v1.endpoints import (
     judging,
     announcements,
     winners,
+    judge,
 )
 
 api_router = APIRouter()
@@ -29,4 +30,5 @@ api_router.include_router(certificates.router, prefix="/certificates", tags=["Ce
 api_router.include_router(judging.router, prefix="/judging", tags=["Judging & Evaluations"])
 api_router.include_router(announcements.router, prefix="/announcements", tags=["Announcements"])
 api_router.include_router(winners.router, prefix="/winners", tags=["Winners & Podium"])
+api_router.include_router(judge.router, prefix="/judge", tags=["Judge Portal"])
 

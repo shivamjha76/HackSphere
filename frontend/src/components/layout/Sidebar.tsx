@@ -163,6 +163,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           } else if (item.id === "announcements") {
                             router.push("/organizer/announcements");
                           }
+                        } else if (currentRole === "judge") {
+                          if (item.id === "dashboard" || item.id === "assigned-hackathons") {
+                            router.push("/judge/dashboard");
+                          } else if (
+                            item.id === "submissions-to-review" ||
+                            item.id === "submissions" ||
+                            item.id === "my-evaluations"
+                          ) {
+                            router.push("/judge/submissions");
+                          } else if (item.id === "leaderboards") {
+                            router.push("/organizer/winners");
+                          }
                         } else {
                           if (item.id === "dashboard") router.push("/dashboard");
                           else if (item.id === "explore") router.push("/explore");
