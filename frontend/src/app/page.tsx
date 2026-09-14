@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { Navbar } from "@/components/layout/Navbar";
+import { Sidebar } from "@/components/layout/Sidebar";
 import { GlobalSearchModal } from "@/components/layout/GlobalSearchModal";
 import { RoleSwitcher, ROLE_CONFIGS } from "@/components/RoleSwitcher";
 import { useAuth } from "@/context/AuthContext";
@@ -50,6 +51,7 @@ export default function HomePage() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<"login" | "signup">("login");
   const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [activeNav, setActiveNav] = useState("dashboard");
 
   useEffect(() => {
     async function checkBackend() {
@@ -94,13 +96,13 @@ export default function HomePage() {
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold shadow-2xs">
             <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-            <span>Step 12 Complete: Global Top Navigation Bar Active (Phase 4 Started 🚀)</span>
+            <span>Step 13 Complete: Role-Based Dynamic Left Sidebar Active (Phase 4 In Progress ⚡)</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
             One Platform for Complete Hackathon Management
           </h1>
           <p className="text-slate-600 max-w-2xl mx-auto text-sm sm:text-base">
-            Enterprise top navigation shell: Global <kbd className="px-1.5 py-0.5 text-xs font-mono bg-white border border-slate-300 rounded shadow-2xs">⌘K</kbd> Command Search, Notifications Center, Language Switcher, Active Role Switcher, and Gamified Profile Menu.
+            Enterprise top navigation shell and role-based dynamic sidebar: Participant, Organizer, Judge, and Super Admin views transform seamlessly with active context.
           </p>
         </div>
 
@@ -200,6 +202,77 @@ export default function HomePage() {
             </div>
           </Card>
         </div>
+
+        {/* Dynamic App Shell & Role-Based Sidebar Canvas */}
+        <Card className="overflow-hidden border-slate-200/80 shadow-md">
+          <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-blue-400" />
+              <h3 className="text-sm font-bold">Interactive App Shell & Role-Based Sidebar</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-2xs text-slate-400">Current Role:</span>
+              <Badge variant="brand" className="text-2xs uppercase">
+                {activeRole || "guest / participant"}
+              </Badge>
+            </div>
+          </div>
+
+          <div className="flex flex-col md:flex-row min-h-[440px] bg-slate-50/50">
+            {/* Embedded Dynamic Left Sidebar */}
+            <Sidebar
+              activeItemId={activeNav}
+              onSelectNavItem={(id) => setActiveNav(id)}
+              className="border-b md:border-b-0 md:border-r border-slate-200/80"
+            />
+
+            {/* Simulated Main Content Canvas */}
+            <div className="flex-1 p-6 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+                <div>
+                  <h3 className="text-lg font-extrabold text-slate-900 capitalize">
+                    {activeNav.replace(/-/g, " ")}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Active view rendered for the <span className="font-semibold text-slate-700">{activeRole || "participant"}</span> role context.
+                  </p>
+                </div>
+                <Badge variant="outline" className="text-2xs font-mono">
+                  route: /{activeRole || "participant"}/{activeNav}
+                </Badge>
+              </div>
+
+              {/* Dynamic Mock Section Previews */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-1">
+                  <span className="text-2xs uppercase tracking-wider font-semibold text-slate-400">Role Authority</span>
+                  <p className="text-sm font-bold text-slate-800 capitalize">{activeRole || "Participant"}</p>
+                  <p className="text-2xs text-slate-500">Ek Email = Ek Account</p>
+                </div>
+                <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-1">
+                  <span className="text-2xs uppercase tracking-wider font-semibold text-slate-400">Selected Module</span>
+                  <p className="text-sm font-bold text-blue-600 capitalize">{activeNav.replace(/-/g, " ")}</p>
+                  <p className="text-2xs text-slate-500">Dynamic UI Component</p>
+                </div>
+                <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-1">
+                  <span className="text-2xs uppercase tracking-wider font-semibold text-slate-400">UI Screen Source</span>
+                  <p className="text-sm font-bold text-purple-600">59 High-Fidelity Screens</p>
+                  <p className="text-2xs text-slate-500">Tailwind CSS + Lucide Icons</p>
+                </div>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-white border border-dashed border-slate-300 text-center space-y-2 py-8">
+                <Sparkles className="w-6 h-6 text-blue-600 mx-auto" />
+                <h4 className="text-sm font-bold text-slate-800">
+                  Ready to connect: {activeNav.replace(/-/g, " ")}
+                </h4>
+                <p className="text-xs text-slate-500 max-w-md mx-auto">
+                  Click any navigation item in the sidebar, collapse to icon rail, or switch roles from the top navigation to watch the entire sidebar transform automatically!
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
 
         {/* Active Mode Context Banner (When Logged In) */}
         {isAuthenticated && activeConfig && (
