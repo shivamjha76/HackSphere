@@ -68,3 +68,119 @@ class JudgeDashboardOverviewOut(BaseModel):
     upcoming_deadlines: List[JudgeUpcomingDeadlineOut] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class RubricCriterionItem(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    max_score: int = 20
+    weight: float = 1.0
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class EvaluationScoreItem(BaseModel):
+    criterion_id: int
+    criterion_name: str
+    score: float
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ExistingEvaluationOut(BaseModel):
+    id: int
+    status: str  # "draft" | "submitted"
+    total_score: float
+    scores: List[EvaluationScoreItem] = []
+    feedback: Optional[str] = None
+    is_flagged_for_review: bool = False
+    flag_reason: Optional[str] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SubmissionReviewTeamMemberOut(BaseModel):
+    user_id: int
+    name: str
+    role: str  # "leader" | "member"
+    avatar_url: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SubmissionReviewTeamOut(BaseModel):
+    id: int
+    name: str
+    invite_code: str
+    track: Optional[str] = None
+    members: List[SubmissionReviewTeamMemberOut] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SubmissionReviewHackathonOut(BaseModel):
+    id: int
+    title: str
+    slug: str
+    organization_name: str
+    mode: str = "online"
+    event_start: Optional[datetime] = None
+    event_end: Optional[datetime] = None
+    judging_end: Optional[datetime] = None
+    total_teams: int = 0
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+
+class SubmissionReviewDetailOut(BaseModel):
+    submission_id: int
+    submission_code: str
+    project_title: str
+    tagline: Optional[str] = None
+    description: Optional[str] = None
+    github_url: Optional[str] = None
+    live_demo_url: Optional[str] = None
+    video_url: Optional[str] = None
+    presentation_url: Optional[str] = None
+    attachment_url: Optional[str] = None
+    submitted_at: datetime
+    version: int = 1
+    hackathon: SubmissionReviewHackathonOut
+    team: SubmissionReviewTeamOut
+    rubric_criteria: List[RubricCriterionItem] = []
+    existing_evaluation: Optional[ExistingEvaluationOut] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class EvaluationScoreInput(BaseModel):
+    criterion_id: int
+    score: float
+
+
+class EvaluationSubmitPayload(BaseModel):
+    scores: List[EvaluationScoreInput] = []
+    feedback: Optional[str] = None
+    status: str = "submitted"  # "draft" | "submitted"
+    is_flagged_for_review: bool = False
+    flag_reason: Optional[str] = None
+
+
+class EvaluationResultOut(BaseModel):
+    evaluation_id: int
+    submission_id: int
+    judge_id: int
+    total_score: float
+    status: str
+    feedback: Optional[str] = None
+    is_flagged_for_review: bool = False
+    flag_reason: Optional[str] = None
+    scores: List[EvaluationScoreItem] = []
+    updated_at: datetime
+    message: str
+
+    model_config = ConfigDict(from_attributes=True)
+

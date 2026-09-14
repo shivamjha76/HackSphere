@@ -1221,6 +1221,104 @@ export interface JudgeSubmissionsFilterParams {
   search?: string;
 }
 
+export interface RubricCriterionItem {
+  id: number;
+  name: string;
+  description?: string | null;
+  max_score: number;
+  weight: number;
+}
+
+export interface EvaluationScoreItem {
+  criterion_id: number;
+  criterion_name: string;
+  score: number;
+}
+
+export interface ExistingEvaluationOut {
+  id: number;
+  status: "draft" | "submitted";
+  total_score: number;
+  scores: EvaluationScoreItem[];
+  feedback?: string | null;
+  is_flagged_for_review: boolean;
+  flag_reason?: string | null;
+  updated_at?: string | null;
+}
+
+export interface SubmissionReviewTeamMemberOut {
+  user_id: number;
+  name: string;
+  role: string;
+  avatar_url?: string | null;
+}
+
+export interface SubmissionReviewTeamOut {
+  id: number;
+  name: string;
+  invite_code: string;
+  track?: string | null;
+  members: SubmissionReviewTeamMemberOut[];
+}
+
+export interface SubmissionReviewHackathonOut {
+  id: number;
+  title: string;
+  slug: string;
+  organization_name: string;
+  mode: string;
+  event_start?: string | null;
+  event_end?: string | null;
+  judging_end?: string | null;
+  total_teams: number;
+}
+
+export interface SubmissionReviewDetailOut {
+  submission_id: number;
+  submission_code: string;
+  project_title: string;
+  tagline?: string | null;
+  description?: string | null;
+  github_url?: string | null;
+  live_demo_url?: string | null;
+  video_url?: string | null;
+  presentation_url?: string | null;
+  attachment_url?: string | null;
+  submitted_at: string;
+  version: number;
+  hackathon: SubmissionReviewHackathonOut;
+  team: SubmissionReviewTeamOut;
+  rubric_criteria: RubricCriterionItem[];
+  existing_evaluation?: ExistingEvaluationOut | null;
+}
+
+export interface EvaluationScoreInput {
+  criterion_id: number;
+  score: number;
+}
+
+export interface EvaluationSubmitPayload {
+  scores: EvaluationScoreInput[];
+  feedback?: string | null;
+  status: "draft" | "submitted";
+  is_flagged_for_review?: boolean;
+  flag_reason?: string | null;
+}
+
+export interface EvaluationResultOut {
+  evaluation_id: number;
+  submission_id: number;
+  judge_id: number;
+  total_score: number;
+  status: string;
+  feedback?: string | null;
+  is_flagged_for_review: boolean;
+  flag_reason?: string | null;
+  scores: EvaluationScoreItem[];
+  updated_at: string;
+  message: string;
+}
+
 export const judgeApi = {
   getDashboard: async (): Promise<JudgeDashboardOverviewOut> => {
     return apiFetch<JudgeDashboardOverviewOut>("/judge/dashboard");
@@ -1240,7 +1338,26 @@ export const judgeApi = {
   getAssignedHackathons: async (): Promise<JudgeAssignedHackathonOut[]> => {
     return apiFetch<JudgeAssignedHackathonOut[]>("/judge/hackathons");
   },
+
+  getSubmissionForReview: async (submissionId: number): Promise<SubmissionReviewDetailOut> => {
+    return apiFetch<SubmissionReviewDetailOut>(`/judge/submissions/${submissionId}/review`);
+  },
+
+  submitEvaluation: async (
+    submissionId: number,
+    payload: EvaluationSubmitPayload
+  ): Promise<EvaluationResultOut> => {
+    return apiFetch<EvaluationResultOut>(`/judge/submissions/${submissionId}/evaluate`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getEvaluation: async (evaluationId: number): Promise<EvaluationResultOut> => {
+    return apiFetch<EvaluationResultOut>(`/judge/evaluations/${evaluationId}`);
+  },
 };
+
 
 
 

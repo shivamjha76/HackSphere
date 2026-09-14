@@ -465,9 +465,20 @@ def seed_database():
             )
             db.add(eval_record)
             db.flush()
+        else:
+            eval_record.total_score = 91.0
+            eval_record.status = "submitted"
+            eval_record.is_flagged_for_review = False
+            eval_record.feedback = (
+                "Exceptional project with production-grade engineering. "
+                "The autonomous agent execution and clean UI interface stand out."
+            )
+            db.flush()
 
-            # Rubric breakdown scores (Total = 91/100)
-            scores_data = [
+        # Rubric breakdown scores (Total = 91/100)
+        db.query(EvaluationScore).filter_by(evaluation_id=eval_record.id).delete()
+        db.flush()
+        scores_data = [
                 ("Problem Definition", 14.0),
                 ("Innovation & Creativity", 19.0),
                 ("Solution & Functionality", 23.0),
@@ -475,14 +486,14 @@ def seed_database():
                 ("Impact & Scalability", 9.0),
                 ("Presentation & Demo", 8.0),
             ]
-            for c_name, sc in scores_data:
-                score_entry = EvaluationScore(
-                    evaluation_id=eval_record.id,
-                    criterion_id=criteria_map[c_name].id,
-                    score=sc,
-                )
-                db.add(score_entry)
-            db.flush()
+        for c_name, sc in scores_data:
+            score_entry = EvaluationScore(
+                evaluation_id=eval_record.id,
+                criterion_id=criteria_map[c_name].id,
+                score=sc,
+            )
+            db.add(score_entry)
+        db.flush()
         print("[+] Verified Judge evaluation & rubric scores (Score: 91/100 by Judge Rohan Mehta).")
 
         # 10. Seed Verifiable Certificate

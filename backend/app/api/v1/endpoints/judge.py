@@ -24,9 +24,20 @@ from app.schemas.judge import (
     JudgeAssignedHackathonOut,
     JudgeSubmissionQueueItemOut,
     JudgeUpcomingDeadlineOut,
+    RubricCriterionItem,
+    EvaluationScoreItem,
+    ExistingEvaluationOut,
+    SubmissionReviewTeamMemberOut,
+    SubmissionReviewTeamOut,
+    SubmissionReviewHackathonOut,
+    SubmissionReviewDetailOut,
+    EvaluationScoreInput,
+    EvaluationSubmitPayload,
+    EvaluationResultOut,
 )
 
 router = APIRouter()
+
 
 
 def ensure_utc(dt: Optional[datetime]) -> Optional[datetime]:
@@ -297,3 +308,471 @@ def list_judge_assigned_hackathons(
     verify_judge_access(current_user)
     overview = get_judge_dashboard(db=db, current_user=current_user)
     return overview.assigned_hackathons
+
+
+def ensure_evaluation_criteria(db: Session, hackathon_id: int) -> List[EvaluationCriteria]:
+    """
+    Ensures standard rubric criteria matching UI Screen #2 exist for the hackathon.
+    """
+    criteria = (
+        db.query(EvaluationCriteria)
+        .filter(EvaluationCriteria.hackathon_id == hackathon_id)
+        .order_by(EvaluationCriteria.id)
+        .all()
+    )
+    if not criteria:
+        default_criteria = [
+            EvaluationCriteria(
+                hackathon_id=hackathon_id,
+                name="Problem Definition",
+                description="Clarity and relevance of the problem statement and its significance.",
+                max_score=20,
+                weight=1.0,
+            ),
+            EvaluationCriteria(
+                hackathon_id=hackathon_id,
+                name="Innovation & Creativity",
+                description="Uniqueness of the idea and creativity in approach.",
+                max_score=20,
+                weight=1.0,
+            ),
+            EvaluationCriteria(
+                hackathon_id=hackathon_id,
+                name="Technical Feasibility",
+                description="How well the solution works and addresses the problem.",
+                max_score=20,
+                weight=1.0,
+            ),
+            EvaluationCriteria(
+                hackathon_id=hackathon_id,
+                name="Code Quality",
+                description="Architecture, use of technology, and technical complexity.",
+                max_score=20,
+                weight=1.0,
+            ),
+            EvaluationCriteria(
+                hackathon_id=hackathon_id,
+                name="Impact & Scalability",
+                description="Potential real-world impact and ability to scale.",
+                max_score=10,
+                weight=1.0,
+            ),
+            EvaluationCriteria(
+                hackathon_id=hackathon_id,
+                name="Presentation & Demo",
+                description="Quality of the demo, slides, and team communication.",
+                max_score=10,
+                weight=1.0,
+            ),
+        ]
+        db.add_all(default_criteria)
+        db.commit()
+        for c in default_criteria:
+            db.refresh(c)
+        criteria = default_criteria
+    return criteria
+
+
+def get_judge_record(db: Session, user: User, hackathon_id: int) -> HackathonJudge:
+    """
+    Finds or provisions active HackathonJudge record for user in hackathon.
+    """
+    judge_record = (
+        db.query(HackathonJudge)
+        .filter(
+            HackathonJudge.user_id == user.id,
+            HackathonJudge.hackathon_id == hackathon_id,
+            HackathonJudge.status == "active",
+        )
+        .first()
+    )
+    if not judge_record:
+        if user.is_superuser:
+            judge_record = (
+                db.query(HackathonJudge)
+                .filter(HackathonJudge.hackathon_id == hackathon_id)
+                .first()
+            )
+            if not judge_record:
+                judge_record = HackathonJudge(
+                    hackathon_id=hackathon_id,
+                    user_id=user.id,
+                    expertise="SuperAdmin Reviewer",
+                    status="active",
+                )
+                db.add(judge_record)
+                db.commit()
+                db.refresh(judge_record)
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not appointed as an active judge for this hackathon.",
+            )
+    return judge_record
+
+
+@router.get("/submissions/{submission_id}/review", response_model=SubmissionReviewDetailOut)
+def get_submission_for_review(
+    submission_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Returns full submission review payload matching Screen #2:
+    Deliverables (GitHub, demo, PPT, video), team roster, hackathon info,
+    multi-criteria rubric, and existing drafted/submitted evaluation.
+    """
+    verify_judge_access(current_user)
+
+    submission = db.query(Submission).filter(Submission.id == submission_id).first()
+    if not submission:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Submission not found.",
+        )
+
+    judge_record = get_judge_record(db, current_user, submission.hackathon_id)
+
+    # Check if this team is assigned to this judge (if assignments exist for this hackathon)
+    assignment = (
+        db.query(JudgeAssignment)
+        .filter(
+            JudgeAssignment.judge_id == judge_record.id,
+            JudgeAssignment.team_id == submission.team_id,
+        )
+        .first()
+    )
+    if not assignment and not current_user.is_superuser:
+        has_assignments = (
+            db.query(JudgeAssignment)
+            .filter(JudgeAssignment.hackathon_id == submission.hackathon_id)
+            .first()
+        )
+        if has_assignments:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not assigned to evaluate this team's submission.",
+            )
+
+    # 1. Criteria
+    criteria = ensure_evaluation_criteria(db, submission.hackathon_id)
+    criteria_out = [
+        RubricCriterionItem(
+            id=c.id,
+            name=c.name,
+            description=c.description,
+            max_score=c.max_score,
+            weight=c.weight,
+        )
+        for c in criteria
+    ]
+
+    # 2. Hackathon Info
+    h = submission.hackathon
+    org_name = h.organization.name if h and h.organization else "Organizer"
+    hackathon_out = SubmissionReviewHackathonOut(
+        id=h.id,
+        title=h.title,
+        slug=h.slug,
+        organization_name=org_name,
+        mode=h.mode or "online",
+        event_start=ensure_utc(h.event_start),
+        event_end=ensure_utc(h.event_end),
+        judging_end=ensure_utc(h.judging_end),
+        total_teams=len(h.teams) if h.teams else 0,
+    )
+
+    # 3. Team Info
+    t = submission.team
+    team_members_out = []
+    if t and t.members:
+        for m in t.members:
+            u = m.user
+            team_members_out.append(
+                SubmissionReviewTeamMemberOut(
+                    user_id=m.user_id,
+                    name=u.full_name if u else f"Member #{m.user_id}",
+                    role=m.role,
+                    avatar_url=None,
+                )
+            )
+
+    team_out = SubmissionReviewTeamOut(
+        id=t.id if t else 0,
+        name=t.name if t else "Unknown Team",
+        invite_code=t.invite_code if t else f"TEAM-{submission.team_id:03d}",
+        track=t.track if t else None,
+        members=team_members_out,
+    )
+
+    # 4. Existing Evaluation
+    existing_eval = (
+        db.query(Evaluation)
+        .filter(
+            Evaluation.judge_id == judge_record.id,
+            Evaluation.submission_id == submission.id,
+        )
+        .first()
+    )
+
+    existing_eval_out = None
+    if existing_eval:
+        criteria_dict = {c.id: c.name for c in criteria}
+        score_items = [
+            EvaluationScoreItem(
+                criterion_id=s.criterion_id,
+                criterion_name=criteria_dict.get(s.criterion_id, f"Criterion #{s.criterion_id}"),
+                score=s.score,
+            )
+            for s in existing_eval.scores
+        ]
+        existing_eval_out = ExistingEvaluationOut(
+            id=existing_eval.id,
+            status=existing_eval.status,
+            total_score=existing_eval.total_score,
+            scores=score_items,
+            feedback=existing_eval.feedback,
+            is_flagged_for_review=existing_eval.is_flagged_for_review,
+            flag_reason=existing_eval.flag_reason,
+            updated_at=ensure_utc(existing_eval.updated_at or existing_eval.created_at),
+        )
+
+    return SubmissionReviewDetailOut(
+        submission_id=submission.id,
+        submission_code=f"SUB-2025-{submission.id:03d}",
+        project_title=submission.project_title,
+        tagline=submission.tagline,
+        description=submission.description,
+        github_url=submission.github_url,
+        live_demo_url=submission.live_demo_url,
+        video_url=submission.video_url,
+        presentation_url=submission.presentation_url,
+        attachment_url=submission.attachment_url,
+        submitted_at=ensure_utc(submission.submitted_at or submission.created_at),
+        version=submission.version,
+        hackathon=hackathon_out,
+        team=team_out,
+        rubric_criteria=criteria_out,
+        existing_evaluation=existing_eval_out,
+    )
+
+
+@router.post("/submissions/{submission_id}/evaluate", response_model=EvaluationResultOut)
+def evaluate_submission(
+    submission_id: int,
+    payload: EvaluationSubmitPayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Submits or saves as draft an evaluation for a submission.
+    Validates rubric scores, computes normalized total score (0-100),
+    performs anomaly detection, and updates judge assignment status.
+    """
+    verify_judge_access(current_user)
+
+    submission = db.query(Submission).filter(Submission.id == submission_id).first()
+    if not submission:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Submission not found.",
+        )
+
+    judge_record = get_judge_record(db, current_user, submission.hackathon_id)
+
+    assignment = (
+        db.query(JudgeAssignment)
+        .filter(
+            JudgeAssignment.judge_id == judge_record.id,
+            JudgeAssignment.team_id == submission.team_id,
+        )
+        .first()
+    )
+
+    criteria = ensure_evaluation_criteria(db, submission.hackathon_id)
+    criteria_map = {c.id: c for c in criteria}
+
+    # Validate scores
+    scores_to_record = []
+    total_raw = 0.0
+    total_max = 0.0
+    all_zero = True
+
+    for score_in in payload.scores:
+        crit = criteria_map.get(score_in.criterion_id)
+        if not crit:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Criterion ID {score_in.criterion_id} does not belong to this hackathon.",
+            )
+        if score_in.score < 0 or score_in.score > crit.max_score:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Score for '{crit.name}' must be between 0 and {crit.max_score}.",
+            )
+        if score_in.score > 0:
+            all_zero = False
+        scores_to_record.append((crit, score_in.score))
+        total_raw += score_in.score * crit.weight
+        total_max += crit.max_score * crit.weight
+
+    # Total score out of 100
+    if total_max > 0:
+        computed_total = round((total_raw / total_max) * 100, 1)
+    else:
+        computed_total = round(total_raw, 1)
+
+    eval_status = "submitted" if payload.status == "submitted" else "draft"
+
+    # Anomaly / Outlier check
+    is_flagged = payload.is_flagged_for_review
+    flag_reason = payload.flag_reason
+
+    if eval_status == "submitted" and len(scores_to_record) > 0 and all_zero:
+        is_flagged = True
+        flag_reason = flag_reason or "Automated Flag: All rubric criteria were scored 0."
+
+    # Upsert evaluation
+    evaluation = (
+        db.query(Evaluation)
+        .filter(
+            Evaluation.judge_id == judge_record.id,
+            Evaluation.submission_id == submission.id,
+        )
+        .first()
+    )
+
+    if not evaluation:
+        evaluation = Evaluation(
+            judge_id=judge_record.id,
+            submission_id=submission.id,
+            assignment_id=assignment.id if assignment else None,
+            total_score=computed_total,
+            feedback=payload.feedback,
+            is_flagged_for_review=is_flagged,
+            flag_reason=flag_reason,
+            status=eval_status,
+        )
+        db.add(evaluation)
+        db.flush()
+    else:
+        evaluation.total_score = computed_total
+        evaluation.feedback = payload.feedback
+        evaluation.status = eval_status
+        evaluation.is_flagged_for_review = is_flagged
+        evaluation.flag_reason = flag_reason
+        if assignment and not evaluation.assignment_id:
+            evaluation.assignment_id = assignment.id
+
+        # Delete old score records to overwrite
+        db.query(EvaluationScore).filter(EvaluationScore.evaluation_id == evaluation.id).delete()
+        db.flush()
+
+    # Insert score records
+    score_items_out: List[EvaluationScoreItem] = []
+    for crit, score_val in scores_to_record:
+        eval_score = EvaluationScore(
+            evaluation_id=evaluation.id,
+            criterion_id=crit.id,
+            score=score_val,
+        )
+        db.add(eval_score)
+        score_items_out.append(
+            EvaluationScoreItem(
+                criterion_id=crit.id,
+                criterion_name=crit.name,
+                score=score_val,
+            )
+        )
+
+    # Synchronize assignment status
+    if assignment:
+        if eval_status == "submitted":
+            assignment.status = "completed"
+        else:
+            assignment.status = "in_progress"
+
+    db.commit()
+    db.refresh(evaluation)
+
+    message = (
+        "Evaluation submitted successfully."
+        if eval_status == "submitted"
+        else "Evaluation draft saved successfully."
+    )
+
+    return EvaluationResultOut(
+        evaluation_id=evaluation.id,
+        submission_id=submission.id,
+        judge_id=current_user.id,
+        total_score=evaluation.total_score,
+        status=evaluation.status,
+        feedback=evaluation.feedback,
+        is_flagged_for_review=evaluation.is_flagged_for_review,
+        flag_reason=evaluation.flag_reason,
+        scores=score_items_out,
+        updated_at=ensure_utc(evaluation.updated_at or evaluation.created_at),
+        message=message,
+    )
+
+
+@router.get("/evaluations/{evaluation_id}", response_model=EvaluationResultOut)
+def get_evaluation_by_id(
+    evaluation_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Returns single evaluation by ID for judge.
+    """
+    verify_judge_access(current_user)
+
+    evaluation = db.query(Evaluation).filter(Evaluation.id == evaluation_id).first()
+    if not evaluation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Evaluation not found.",
+        )
+
+    if not current_user.is_superuser:
+        judge_record = (
+            db.query(HackathonJudge)
+            .filter(HackathonJudge.id == evaluation.judge_id)
+            .first()
+        )
+        if not judge_record or judge_record.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not authorized to view this evaluation.",
+            )
+
+    criteria = (
+        db.query(EvaluationCriteria)
+        .filter(EvaluationCriteria.hackathon_id == evaluation.submission.hackathon_id)
+        .all()
+    )
+    criteria_map = {c.id: c.name for c in criteria}
+
+    score_items = [
+        EvaluationScoreItem(
+            criterion_id=s.criterion_id,
+            criterion_name=criteria_map.get(s.criterion_id, f"Criterion #{s.criterion_id}"),
+            score=s.score,
+        )
+        for s in evaluation.scores
+    ]
+
+    return EvaluationResultOut(
+        evaluation_id=evaluation.id,
+        submission_id=evaluation.submission_id,
+        judge_id=current_user.id,
+        total_score=evaluation.total_score,
+        status=evaluation.status,
+        feedback=evaluation.feedback,
+        is_flagged_for_review=evaluation.is_flagged_for_review,
+        flag_reason=evaluation.flag_reason,
+        scores=score_items,
+        updated_at=ensure_utc(evaluation.updated_at or evaluation.created_at),
+        message="Evaluation retrieved successfully.",
+    )
+

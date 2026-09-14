@@ -252,8 +252,7 @@ export const SubmissionsReviewQueueTable: React.FC<SubmissionsReviewQueueTablePr
                     <div className="inline-flex items-center gap-2">
                       {item.evaluation_status === "completed" ? (
                         <Link
-                          href={`/teams/${item.team_id}`}
-                          target="_blank"
+                          href={`/judge/submissions/${item.submission_id}/review`}
                           className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-semibold text-xs border border-slate-700 inline-flex items-center gap-1 transition"
                         >
                           <span>Review</span>
@@ -261,8 +260,7 @@ export const SubmissionsReviewQueueTable: React.FC<SubmissionsReviewQueueTablePr
                         </Link>
                       ) : (
                         <Link
-                          href={`/teams/${item.team_id}`}
-                          target="_blank"
+                          href={`/judge/submissions/${item.submission_id}/review`}
                           className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-xs shadow-md shadow-amber-500/10 inline-flex items-center gap-1.5 transition"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
