@@ -9,7 +9,9 @@ from app.db.session import get_db
 from app.api.deps import get_current_user, get_current_user_optional, get_user_roles
 from app.models.hackathon import Hackathon, HackathonRegistration
 from app.models.organization import Organization, OrganizationMember
-from app.models.judging import HackathonJudge, EvaluationCriteria
+from app.models.judging import HackathonJudge, EvaluationCriteria, Evaluation
+from app.models.submission import Submission
+from app.models.team import Team, TeamMember
 from app.models.user import User
 from app.schemas.hackathon import (
     HackathonOut,
@@ -21,6 +23,12 @@ from app.schemas.hackathon import (
     RegistrationStatusOut,
     HackathonCreatePayload,
     CriterionCreatePayload,
+)
+from app.schemas.organizer_management import (
+    PhaseTransitionPayload,
+    SubmissionModerationPayload,
+    ManagedSubmissionItemOut,
+    HackathonManagementDetailOut,
 )
 
 router = APIRouter()
@@ -461,3 +469,232 @@ def check_registration_status(
     if reg:
         return RegistrationStatusOut(is_registered=True, registration_id=reg.id)
     return RegistrationStatusOut(is_registered=False, registration_id=None)
+
+
+def map_managed_submission_out(s: Submission) -> ManagedSubmissionItemOut:
+    team_name = s.team.name if s.team else "Independent Hacker"
+    members_count = len(s.team.members) if (s.team and s.team.members) else 1
+    evals = s.evaluations or []
+    evals_count = len(evals)
+    avg_score = round(sum(e.total_score for e in evals) / evals_count, 2) if evals_count > 0 else None
+
+    return ManagedSubmissionItemOut(
+        id=s.id,
+        team_id=s.team_id,
+        team_name=team_name,
+        team_members_count=members_count,
+        project_title=s.project_title,
+        tagline=s.tagline,
+        description=s.description,
+        github_url=s.github_url,
+        live_demo_url=s.live_demo_url,
+        video_url=s.video_url,
+        presentation_url=s.presentation_url,
+        attachment_url=s.attachment_url,
+        version=s.version,
+        is_locked=s.is_locked,
+        status=s.status,
+        submitted_at=s.submitted_at,
+        evaluations_count=evals_count,
+        average_score=avg_score,
+    )
+
+
+def map_hackathon_management_detail_out(h: Hackathon, submissions: List[Submission]) -> HackathonManagementDetailOut:
+    managed_submissions = [map_managed_submission_out(s) for s in submissions]
+    total_sub = len(managed_submissions)
+    locked_count = sum(1 for s in managed_submissions if s.is_locked)
+    flagged_count = sum(1 for s in managed_submissions if s.status == "flagged")
+    total_evals = sum(s.evaluations_count for s in managed_submissions)
+    avg_evals = round(total_evals / total_sub, 2) if total_sub > 0 else 0.0
+
+    return HackathonManagementDetailOut(
+        id=h.id,
+        slug=h.slug,
+        title=h.title,
+        tagline=h.tagline,
+        status=h.status,
+        mode=h.mode,
+        theme=h.theme,
+        min_team_size=h.min_team_size,
+        max_team_size=h.max_team_size,
+        prize_pool_summary=h.prize_pool_summary,
+        registration_start=h.registration_start,
+        registration_end=h.registration_end,
+        event_start=h.event_start,
+        event_end=h.event_end,
+        submission_start=h.submission_start,
+        submission_end=h.submission_end,
+        judging_start=h.judging_start,
+        judging_end=h.judging_end,
+        result_date=h.result_date,
+        total_registered=len(h.registrations or []),
+        total_teams=len(h.teams or []),
+        total_submissions=total_sub,
+        locked_submissions_count=locked_count,
+        flagged_submissions_count=flagged_count,
+        average_evaluations_per_submission=avg_evals,
+        submissions=managed_submissions,
+    )
+
+
+@router.get("/{slug_or_id}/manage", response_model=HackathonManagementDetailOut, summary="Get Hackathon Management Console Detail")
+def get_hackathon_management_detail(
+    slug_or_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> HackathonManagementDetailOut:
+    """
+    Returns complete tournament operations details for organizers per Chapters 15 & 16.
+    Includes lifecycle state, submissions inspection list, lock status, and judging metrics.
+    """
+    roles = get_user_roles(current_user)
+    if not ("organizer" in roles or current_user.is_superuser):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden: Organizer role required to manage hackathons.",
+        )
+
+    query = (
+        db.query(Hackathon)
+        .options(
+            joinedload(Hackathon.organization),
+            joinedload(Hackathon.registrations),
+            joinedload(Hackathon.teams),
+        )
+    )
+    if slug_or_id.isdigit():
+        hackathon = query.filter(or_(Hackathon.id == int(slug_or_id), Hackathon.slug == slug_or_id)).first()
+    else:
+        hackathon = query.filter(Hackathon.slug == slug_or_id).first()
+
+    if not hackathon:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Hackathon '{slug_or_id}' not found.")
+
+    submissions = (
+        db.query(Submission)
+        .options(
+            joinedload(Submission.team).joinedload(Team.members),
+            joinedload(Submission.evaluations),
+        )
+        .filter(Submission.hackathon_id == hackathon.id)
+        .order_by(Submission.submitted_at.desc())
+        .all()
+    )
+
+    return map_hackathon_management_detail_out(hackathon, submissions)
+
+
+@router.post("/{slug_or_id}/phase", response_model=HackathonManagementDetailOut, summary="Transition Hackathon Phase Lifecycle")
+def transition_hackathon_phase(
+    slug_or_id: str,
+    payload: PhaseTransitionPayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> HackathonManagementDetailOut:
+    """
+    Transitions tournament lifecycle state machine per Chapter 16.
+    Allowed phases: draft, published, registration, hacking, submission_closed, judging, completed.
+    Automatically bulk-locks all submissions when transitioning to submission_closed, judging, or completed.
+    """
+    roles = get_user_roles(current_user)
+    if not ("organizer" in roles or current_user.is_superuser):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden: Organizer role required to manage hackathons.",
+        )
+
+    allowed_phases = {"draft", "published", "registration", "hacking", "submission_closed", "judging", "completed"}
+    target_phase = payload.phase.lower().strip()
+    if target_phase not in allowed_phases:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid phase '{target_phase}'. Allowed phases are: {', '.join(sorted(allowed_phases))}",
+        )
+
+    if slug_or_id.isdigit():
+        hackathon = db.query(Hackathon).filter(or_(Hackathon.id == int(slug_or_id), Hackathon.slug == slug_or_id)).first()
+    else:
+        hackathon = db.query(Hackathon).filter(Hackathon.slug == slug_or_id).first()
+
+    if not hackathon:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Hackathon '{slug_or_id}' not found.")
+
+    hackathon.status = target_phase
+
+    # Bulk lock all deliverables if entering code freeze / judging / completed
+    if target_phase in ("submission_closed", "judging", "completed"):
+        db.query(Submission).filter(Submission.hackathon_id == hackathon.id).update({"is_locked": True})
+
+    db.commit()
+
+    # Reload refreshed detail
+    submissions = (
+        db.query(Submission)
+        .options(
+            joinedload(Submission.team).joinedload(Team.members),
+            joinedload(Submission.evaluations),
+        )
+        .filter(Submission.hackathon_id == hackathon.id)
+        .order_by(Submission.submitted_at.desc())
+        .all()
+    )
+    return map_hackathon_management_detail_out(hackathon, submissions)
+
+
+@router.patch("/{slug_or_id}/submissions/{submission_id}/status", response_model=ManagedSubmissionItemOut, summary="Moderate Submission Status")
+def moderate_submission_status(
+    slug_or_id: str,
+    submission_id: int,
+    payload: SubmissionModerationPayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ManagedSubmissionItemOut:
+    """
+    Moderates a submission status (submitted, flagged, disqualified) with audit notes per Chapter 16.
+    """
+    roles = get_user_roles(current_user)
+    if not ("organizer" in roles or current_user.is_superuser):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden: Organizer role required to moderate submissions.",
+        )
+
+    allowed_statuses = {"submitted", "flagged", "disqualified"}
+    target_status = payload.status.lower().strip()
+    if target_status not in allowed_statuses:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid status '{target_status}'. Allowed statuses are: {', '.join(sorted(allowed_statuses))}",
+        )
+
+    if slug_or_id.isdigit():
+        hackathon = db.query(Hackathon).filter(or_(Hackathon.id == int(slug_or_id), Hackathon.slug == slug_or_id)).first()
+    else:
+        hackathon = db.query(Hackathon).filter(Hackathon.slug == slug_or_id).first()
+
+    if not hackathon:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Hackathon '{slug_or_id}' not found.")
+
+    submission = (
+        db.query(Submission)
+        .options(
+            joinedload(Submission.team).joinedload(Team.members),
+            joinedload(Submission.evaluations),
+        )
+        .filter(Submission.id == submission_id, Submission.hackathon_id == hackathon.id)
+        .first()
+    )
+
+    if not submission:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Submission {submission_id} not found in this hackathon.",
+        )
+
+    submission.status = target_status
+    db.commit()
+    db.refresh(submission)
+
+    return map_managed_submission_out(submission)
+

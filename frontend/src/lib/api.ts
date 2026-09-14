@@ -247,6 +247,66 @@ export interface HackathonCreatePayload {
   criteria?: CriterionCreatePayload[];
 }
 
+export interface PhaseTransitionPayload {
+  phase: string;
+  override_reason?: string | null;
+}
+
+export interface SubmissionModerationPayload {
+  status: "submitted" | "flagged" | "disqualified" | string;
+  notes?: string | null;
+}
+
+export interface ManagedSubmissionItemOut {
+  id: number;
+  team_id: number;
+  team_name: string;
+  team_members_count: number;
+  project_title: string;
+  tagline?: string | null;
+  description?: string | null;
+  github_url?: string | null;
+  live_demo_url?: string | null;
+  video_url?: string | null;
+  presentation_url?: string | null;
+  attachment_url?: string | null;
+  version: number;
+  is_locked: boolean;
+  status: string;
+  submitted_at: string;
+  evaluations_count: number;
+  average_score?: number | null;
+}
+
+export interface HackathonManagementDetailOut {
+  id: number;
+  slug: string;
+  title: string;
+  tagline?: string | null;
+  status: string;
+  mode: string;
+  theme?: string | null;
+  min_team_size: number;
+  max_team_size: number;
+  prize_pool_summary?: string | null;
+  registration_start?: string | null;
+  registration_end?: string | null;
+  event_start?: string | null;
+  event_end?: string | null;
+  submission_start?: string | null;
+  submission_end?: string | null;
+  judging_start?: string | null;
+  judging_end?: string | null;
+  result_date?: string | null;
+  total_registered: number;
+  total_teams: number;
+  total_submissions: number;
+  locked_submissions_count: number;
+  flagged_submissions_count: number;
+  average_evaluations_per_submission: number;
+  submissions: ManagedSubmissionItemOut[];
+}
+
 export const hackathonsApi = {
   getExploreHackathons: async (
     params: HackathonFilterParams = {}
@@ -269,6 +329,30 @@ export const hackathonsApi = {
 
   getDetail: async (slugOrId: string): Promise<HackathonDetailOut> => {
     return apiFetch<HackathonDetailOut>(`/hackathons/${slugOrId}`, { method: "GET" });
+  },
+
+  getManagementDetail: async (slugOrId: string): Promise<HackathonManagementDetailOut> => {
+    return apiFetch<HackathonManagementDetailOut>(`/hackathons/${slugOrId}/manage`, {
+      method: "GET",
+    });
+  },
+
+  transitionPhase: async (slugOrId: string, payload: PhaseTransitionPayload): Promise<HackathonManagementDetailOut> => {
+    return apiFetch<HackathonManagementDetailOut>(`/hackathons/${slugOrId}/phase`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  moderateSubmission: async (
+    slugOrId: string,
+    submissionId: number,
+    payload: SubmissionModerationPayload
+  ): Promise<ManagedSubmissionItemOut> => {
+    return apiFetch<ManagedSubmissionItemOut>(`/hackathons/${slugOrId}/submissions/${submissionId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
   },
 
   create: async (payload: HackathonCreatePayload): Promise<HackathonDetailOut> => {

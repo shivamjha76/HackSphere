@@ -153,8 +153,8 @@ export const ManagedHackathonsTable: React.FC<ManagedHackathonsTableProps> = ({
                   </Link>
 
                   <Link
-                    href={`/hackathons/${hackathon.slug}`}
-                    className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-1 transition-all"
+                    href={`/organizer/hackathons/${hackathon.slug}/manage`}
+                    className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-1 transition-all shadow-md shadow-blue-600/20 hover:scale-[1.02]"
                   >
                     <span>Manage</span>
                     <ChevronRight className="w-3.5 h-3.5" />
