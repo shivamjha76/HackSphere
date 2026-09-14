@@ -24,6 +24,7 @@ import {
   Calendar,
   Layers,
   Settings,
+  Scale,
 } from "lucide-react";
 
 // Fallback preview data in case of network or unseeded tournament
@@ -260,6 +261,14 @@ export default function HackathonManagementPage() {
 
               {/* Top Action Triggers */}
               <div className="flex items-center gap-3 shrink-0 flex-wrap">
+                <Link
+                  href={`/organizer/hackathons/${data.slug}/judges`}
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-violet-600/30 hover:bg-violet-600/50 text-violet-200 border border-violet-500/40 flex items-center gap-2 transition-all cursor-pointer"
+                >
+                  <Scale className="w-3.5 h-3.5 text-violet-400" />
+                  <span>Judge Assignment Console</span>
+                </Link>
+
                 <Link
                   href={`/hackathons/${data.slug}`}
                   target="_blank"

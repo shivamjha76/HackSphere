@@ -805,3 +805,92 @@ export const certificatesApi = {
   },
 };
 
+export interface JudgeInvitePayload {
+  email: string;
+  expertise?: string | null;
+}
+
+export interface AutoDistributePayload {
+  reviews_per_team: number;
+  strategy?: string;
+}
+
+export interface ManualAssignmentPayload {
+  judge_id: number;
+  team_id: number;
+}
+
+export interface JudgeAssignmentItemOut {
+  id: number;
+  judge_id: number;
+  judge_name: string;
+  team_id: number;
+  team_name: string;
+  status: string;
+  assigned_at: string;
+  is_evaluated: boolean;
+}
+
+export interface AppointedJudgeOut {
+  id: number;
+  user_id: number;
+  full_name: string;
+  email: string;
+  avatar_url?: string | null;
+  expertise?: string | null;
+  status: string;
+  assigned_at: string;
+  assigned_teams_count: number;
+  completed_evaluations_count: number;
+  completion_percentage: number;
+}
+
+export interface HackathonJudgesOverviewOut {
+  hackathon_id: number;
+  hackathon_slug: string;
+  hackathon_title: string;
+  total_judges: number;
+  total_teams: number;
+  total_assignments: number;
+  completed_assignments: number;
+  overall_progress_percentage: number;
+  judges: AppointedJudgeOut[];
+  assignments: JudgeAssignmentItemOut[];
+}
+
+export const judgingApi = {
+  getHackathonJudgesOverview: async (slugOrId: string): Promise<HackathonJudgesOverviewOut> => {
+    return apiFetch<HackathonJudgesOverviewOut>(`/judging/hackathons/${slugOrId}`, {
+      method: "GET",
+    });
+  },
+
+  appointJudge: async (slugOrId: string, payload: JudgeInvitePayload): Promise<AppointedJudgeOut> => {
+    return apiFetch<AppointedJudgeOut>(`/judging/hackathons/${slugOrId}/judges`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  autoDistribute: async (slugOrId: string, payload: AutoDistributePayload): Promise<HackathonJudgesOverviewOut> => {
+    return apiFetch<HackathonJudgesOverviewOut>(`/judging/hackathons/${slugOrId}/distribute`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  createManualAssignment: async (slugOrId: string, payload: ManualAssignmentPayload): Promise<JudgeAssignmentItemOut> => {
+    return apiFetch<JudgeAssignmentItemOut>(`/judging/hackathons/${slugOrId}/assignments`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deleteAssignment: async (assignmentId: number): Promise<{ message: string }> => {
+    return apiFetch<{ message: string }>(`/judging/assignments/${assignmentId}`, {
+      method: "DELETE",
+    });
+  },
+};
+
+
