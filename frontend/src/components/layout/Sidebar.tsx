@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import {
   SIDEBAR_NAV_CONFIGS,
@@ -33,6 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectNavItem,
   className,
 }) => {
+  const router = useRouter();
   const { activeRole, setActiveRole, availableRoles, user } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -141,7 +143,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => onSelectNavItem && onSelectNavItem(item.id)}
+                    onClick={() => {
+                      if (onSelectNavItem) {
+                        onSelectNavItem(item.id);
+                      } else {
+                        if (item.id === "dashboard") router.push("/dashboard");
+                        else if (item.id === "explore") router.push("/explore");
+                        else if (item.id === "my-teams") router.push("/teams");
+                      }
+                    }}
                     title={isCollapsed ? item.title : undefined}
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-150 cursor-pointer group relative",

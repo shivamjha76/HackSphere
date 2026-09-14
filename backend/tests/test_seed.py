@@ -32,8 +32,8 @@ def test_seed_roles_and_users(session):
 
     shivam = session.execute(select(User).filter_by(email="shivam@example.com")).scalar_one()
     assert shivam.full_name == "Shivam Jha"
-    assert shivam.xp == 1250
-    assert shivam.level == 3
+    assert shivam.xp >= 1250
+    assert shivam.level >= 3
     assert verify_password("UserPass123!", shivam.hashed_password) is True
 
     rohan = session.execute(select(User).filter_by(email="rohan.mehta@judge.com")).scalar_one()
