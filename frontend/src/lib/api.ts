@@ -363,9 +363,59 @@ export interface ParticipantDashboardOut {
   recent_activities: ActivityItem[];
 }
 
+export interface OrganizerStatsOut {
+  total_hackathons: number;
+  draft_hackathons: number;
+  live_hackathons: number;
+  completed_hackathons: number;
+  total_participants: number;
+  total_submissions: number;
+  total_judges: number;
+}
+
+export interface ManagedHackathonItemOut {
+  id: number;
+  title: string;
+  slug: string;
+  mode: string;
+  status: string;
+  visibility: string;
+  participant_count: number;
+  submissions_count: number;
+  teams_count: number;
+  registration_end?: string | null;
+  submission_end?: string | null;
+  event_start?: string | null;
+  event_end?: string | null;
+}
+
+export interface OrganizerActivityItemOut {
+  id: string;
+  title: string;
+  description: string;
+  timestamp: string;
+  event_type: string;
+  hackathon_title?: string | null;
+}
+
+export interface OrganizerDashboardOut {
+  organization_id: number;
+  organization_name: string;
+  organization_slug: string;
+  organization_logo_url?: string | null;
+  is_verified: boolean;
+  stats: OrganizerStatsOut;
+  hackathons: ManagedHackathonItemOut[];
+  recent_activity: OrganizerActivityItemOut[];
+}
+
 export const dashboardApi = {
   getParticipantDashboard: async (): Promise<ParticipantDashboardOut> => {
     return apiFetch<ParticipantDashboardOut>("/dashboard/participant", { method: "GET" });
+  },
+
+  getOrganizerDashboard: async (): Promise<OrganizerDashboardOut> => {
+    return apiFetch<OrganizerDashboardOut>("/dashboard/organizer", { method: "GET" });
   },
 };
 

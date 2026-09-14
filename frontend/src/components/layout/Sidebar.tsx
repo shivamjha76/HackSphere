@@ -147,11 +147,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       if (onSelectNavItem) {
                         onSelectNavItem(item.id);
                       } else {
-                        if (item.id === "dashboard") router.push("/dashboard");
-                        else if (item.id === "explore") router.push("/explore");
-                        else if (item.id === "my-teams") router.push("/teams");
-                        else if (item.id === "submissions") router.push("/submissions");
-                        else if (item.id === "achievements") router.push("/certificates");
+                        if (currentRole === "organizer") {
+                          if (item.id === "dashboard" || item.id === "my-hackathons") {
+                            router.push("/organizer/dashboard");
+                          } else if (item.id === "create-hackathon") {
+                            router.push("/organizer/hackathons/create");
+                          } else if (item.id === "submissions") {
+                            router.push("/submissions");
+                          } else if (item.id === "winners") {
+                            router.push("/certificates");
+                          } else if (item.id === "teams") {
+                            router.push("/teams");
+                          }
+                        } else {
+                          if (item.id === "dashboard") router.push("/dashboard");
+                          else if (item.id === "explore") router.push("/explore");
+                          else if (item.id === "my-teams") router.push("/teams");
+                          else if (item.id === "submissions") router.push("/submissions");
+                          else if (item.id === "achievements") router.push("/certificates");
+                        }
                       }
                     }}
                     title={isCollapsed ? item.title : undefined}
