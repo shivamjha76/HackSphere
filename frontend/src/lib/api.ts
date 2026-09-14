@@ -1356,7 +1356,68 @@ export const judgeApi = {
   getEvaluation: async (evaluationId: number): Promise<EvaluationResultOut> => {
     return apiFetch<EvaluationResultOut>(`/judge/evaluations/${evaluationId}`);
   },
+
+  getGuidelines: async (hackathonId?: number): Promise<JudgingGuidelinesOut> => {
+    const qs = hackathonId ? `?hackathon_id=${hackathonId}` : "";
+    return apiFetch<JudgingGuidelinesOut>(`/judge/guidelines${qs}`);
+  },
+
+  declareConflictOfInterest: async (
+    payload: ConflictOfInterestPayload
+  ): Promise<ConflictOfInterestOut> => {
+    return apiFetch<ConflictOfInterestOut>("/judge/conflict-of-interest", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
 };
+
+export interface JudgingRuleItem {
+  id: number;
+  title: string;
+  description: string;
+}
+
+export interface JudgingDosDonts {
+  dos: string[];
+  donts: string[];
+}
+
+export interface JudgingMilestoneDates {
+  judging_start?: string | null;
+  judging_end?: string | null;
+  feedback_release?: string | null;
+}
+
+export interface JudgingGuidelinesOut {
+  hackathon_id: number;
+  hackathon_title: string;
+  hackathon_slug: string;
+  countdown_seconds: number;
+  rubric_criteria: RubricCriterionItem[];
+  total_max_score: number;
+  rules: JudgingRuleItem[];
+  dos_and_donts: JudgingDosDonts;
+  important_dates: JudgingMilestoneDates;
+  conflict_of_interest_policy: string;
+}
+
+export interface ConflictOfInterestPayload {
+  hackathon_id: number;
+  team_id?: number;
+  reason: string;
+  notes?: string;
+}
+
+export interface ConflictOfInterestOut {
+  id: number;
+  judge_id: number;
+  hackathon_id: number;
+  team_id?: number | null;
+  status: string;
+  message: string;
+}
+
 
 
 

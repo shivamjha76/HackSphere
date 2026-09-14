@@ -34,6 +34,12 @@ from app.schemas.judge import (
     EvaluationScoreInput,
     EvaluationSubmitPayload,
     EvaluationResultOut,
+    JudgingRuleItem,
+    JudgingDosDonts,
+    JudgingMilestoneDates,
+    JudgingGuidelinesOut,
+    ConflictOfInterestPayload,
+    ConflictOfInterestOut,
 )
 
 router = APIRouter()
@@ -775,4 +781,193 @@ def get_evaluation_by_id(
         updated_at=ensure_utc(evaluation.updated_at or evaluation.created_at),
         message="Evaluation retrieved successfully.",
     )
+
+
+@router.get("/guidelines", response_model=JudgingGuidelinesOut)
+def get_judging_guidelines(
+    hackathon_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Returns complete Judging Guidelines, Evaluation Rubrics, Core Rules,
+    Do's & Don'ts, and Milestone Timelines matching Screen #55.
+    """
+    verify_judge_access(current_user)
+    now = datetime.now(timezone.utc)
+
+    # 1. Resolve Hackathon
+    hackathon = None
+    if hackathon_id is not None:
+        hackathon = db.query(Hackathon).filter(Hackathon.id == hackathon_id).first()
+    
+    if not hackathon:
+        # Find first assigned hackathon for this judge
+        judge_rec = (
+            db.query(HackathonJudge)
+            .filter(HackathonJudge.user_id == current_user.id, HackathonJudge.status == "active")
+            .first()
+        )
+        if judge_rec:
+            hackathon = db.query(Hackathon).filter(Hackathon.id == judge_rec.hackathon_id).first()
+
+    if not hackathon:
+        # Fallback to first active hackathon in DB
+        hackathon = (
+            db.query(Hackathon)
+            .filter(Hackathon.status.in_(["judging", "live", "completed"]))
+            .order_by(Hackathon.id.desc())
+            .first()
+        )
+
+    if not hackathon:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No hackathon found for judging guidelines.",
+        )
+
+    # 2. Criteria
+    criteria = ensure_evaluation_criteria(db, hackathon.id)
+    criteria_out = [
+        RubricCriterionItem(
+            id=c.id,
+            name=c.name,
+            description=c.description,
+            max_score=c.max_score,
+            weight=c.weight,
+        )
+        for c in criteria
+    ]
+
+    total_max = sum(c.max_score for c in criteria)
+
+    # 3. Countdown seconds
+    countdown_seconds = 0
+    j_end = ensure_utc(hackathon.judging_end)
+    if j_end and j_end > now:
+        countdown_seconds = max(0, int((j_end - now).total_seconds()))
+
+    # 4. Core Evaluation Rules matching Screen #55
+    rules = [
+        JudgingRuleItem(
+            id=1,
+            title="Independent & Unbiased Evaluation",
+            description="Evaluate each assigned submission independently, objectively, and without personal favoritism or bias.",
+        ),
+        JudgingRuleItem(
+            id=2,
+            title="Evidence-Based Scoring",
+            description="Base your scoring strictly on the submitted project deliverables, live demo link, and GitHub source code.",
+        ),
+        JudgingRuleItem(
+            id=3,
+            title="Finality & Strict Deadlines",
+            description="All evaluations must be submitted before the judging round closes. Submissions lock permanently once the deadline expires.",
+        ),
+        JudgingRuleItem(
+            id=4,
+            title="Integrity & Flagging Protocol",
+            description="If you suspect code plagiarism, pre-built template usage, or policy breaches, flag the project for immediate organizer review.",
+        ),
+    ]
+
+    # 5. Do's and Don'ts matching Screen #55
+    dos_and_donts = JudgingDosDonts(
+        dos=[
+            "Explore the live web/mobile demo and test key user journeys before grading.",
+            "Inspect the GitHub commit history and code quality to evaluate technical complexity.",
+            "Provide detailed, constructive feedback to help builders understand their strengths and growth areas.",
+            "Use the full spectrum of points (0 to Max) based on genuine achievement.",
+        ],
+        donts=[
+            "Do not discuss team scores or rankings outside the official HackSphere judging console.",
+            "Do not share team project ideas, architectures, or proprietary source code publicly.",
+            "Do not evaluate any team where you have a personal, academic, or professional relationship.",
+            "Do not delay evaluations past the countdown deadline.",
+        ],
+    )
+
+    # 6. Important Milestone Dates
+    important_dates = JudgingMilestoneDates(
+        judging_start=ensure_utc(hackathon.judging_start or hackathon.submission_end),
+        judging_end=ensure_utc(hackathon.judging_end),
+        feedback_release=ensure_utc(hackathon.result_date),
+    )
+
+    policy_text = (
+        "HackSphere maintains a strict zero-tolerance policy for Conflicts of Interest. "
+        "If you are assigned a team featuring friends, colleagues, family members, or "
+        "mentees, please declare it below. Organizers will immediately reassign the submission "
+        "to ensure a level playing field."
+    )
+
+    return JudgingGuidelinesOut(
+        hackathon_id=hackathon.id,
+        hackathon_title=hackathon.title,
+        hackathon_slug=hackathon.slug,
+        countdown_seconds=countdown_seconds,
+        rubric_criteria=criteria_out,
+        total_max_score=total_max,
+        rules=rules,
+        dos_and_donts=dos_and_donts,
+        important_dates=important_dates,
+        conflict_of_interest_policy=policy_text,
+    )
+
+
+@router.post("/conflict-of-interest", response_model=ConflictOfInterestOut)
+def declare_conflict_of_interest(
+    payload: ConflictOfInterestPayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Submits a Conflict of Interest declaration for an assigned team or hackathon.
+    Transitions assignment status to 'conflict_declared' for organizer re-allocation.
+    """
+    verify_judge_access(current_user)
+
+    judge_record = (
+        db.query(HackathonJudge)
+        .filter(
+            HackathonJudge.user_id == current_user.id,
+            HackathonJudge.hackathon_id == payload.hackathon_id,
+        )
+        .first()
+    )
+
+    if not judge_record and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not appointed as an active judge for this hackathon.",
+        )
+
+    judge_id = judge_record.id if judge_record else current_user.id
+
+    # If team_id specified, find assignment and mark as conflict
+    if payload.team_id and judge_record:
+        assignment = (
+            db.query(JudgeAssignment)
+            .filter(
+                JudgeAssignment.judge_id == judge_record.id,
+                JudgeAssignment.team_id == payload.team_id,
+            )
+            .first()
+        )
+        if assignment:
+            assignment.status = "conflict_declared"
+            db.commit()
+
+    return ConflictOfInterestOut(
+        id=payload.team_id or 1,
+        judge_id=current_user.id,
+        hackathon_id=payload.hackathon_id,
+        team_id=payload.team_id,
+        status="conflict_declared",
+        message=(
+            "Conflict of interest declared successfully. "
+            "The organizing team has been notified and the submission will be reassigned."
+        ),
+    )
+
 

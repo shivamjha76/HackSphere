@@ -184,3 +184,54 @@ class EvaluationResultOut(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
+class JudgingRuleItem(BaseModel):
+    id: int
+    title: str
+    description: str
+
+
+class JudgingDosDonts(BaseModel):
+    dos: List[str] = []
+    donts: List[str] = []
+
+
+class JudgingMilestoneDates(BaseModel):
+    judging_start: Optional[datetime] = None
+    judging_end: Optional[datetime] = None
+    feedback_release: Optional[datetime] = None
+
+
+class JudgingGuidelinesOut(BaseModel):
+    hackathon_id: int
+    hackathon_title: str
+    hackathon_slug: str
+    countdown_seconds: int = 0
+    rubric_criteria: List[RubricCriterionItem] = []
+    total_max_score: int = 100
+    rules: List[JudgingRuleItem] = []
+    dos_and_donts: JudgingDosDonts
+    important_dates: JudgingMilestoneDates
+    conflict_of_interest_policy: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ConflictOfInterestPayload(BaseModel):
+    hackathon_id: int
+    team_id: Optional[int] = None
+    reason: str
+    notes: Optional[str] = None
+
+
+class ConflictOfInterestOut(BaseModel):
+    id: int
+    judge_id: int
+    hackathon_id: int
+    team_id: Optional[int] = None
+    status: str
+    message: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
