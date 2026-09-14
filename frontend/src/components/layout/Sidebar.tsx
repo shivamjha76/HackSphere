@@ -162,6 +162,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             router.push("/teams");
                           } else if (item.id === "announcements") {
                             router.push("/organizer/announcements");
+                          } else if (item.id === "reports") {
+                            router.push("/organizer/reports");
                           }
                         } else if (currentRole === "judge") {
                           if (item.id === "dashboard" || item.id === "assigned-hackathons") {

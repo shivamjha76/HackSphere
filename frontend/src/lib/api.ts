@@ -1490,6 +1490,71 @@ export interface JudgeLeaderboardOverviewOut {
   judge_impact: JudgeImpactMetrics;
 }
 
+export interface DailyTrendItem {
+  date: string;
+  participants: number;
+  teams: number;
+  submissions: number;
+}
+
+export interface RoleDistributionItem {
+  role_name: string;
+  count: number;
+  percentage: number;
+  color: string;
+}
+
+export interface TopPerformingTeamItem {
+  rank: number;
+  team_id: number;
+  team_name: string;
+  team_code: string;
+  project_title: string;
+  track?: string | null;
+  average_score: number;
+  evaluations_count: number;
+  submission_id?: number | null;
+}
+
+export interface ManagedHackathonRef {
+  id: number;
+  title: string;
+  slug: string;
+  status: string;
+}
+
+export interface OrganizerReportsOverviewOut {
+  hackathon_id: number;
+  hackathon_title: string;
+  hackathon_slug: string;
+  organization_name: string;
+  total_participants: number;
+  participants_growth_pct: number;
+  total_teams: number;
+  teams_growth_pct: number;
+  total_submissions: number;
+  submissions_growth_pct: number;
+  evaluations_completed: number;
+  judging_growth_pct: number;
+  page_views: number;
+  views_growth_pct: number;
+  date_range_label: string;
+  role_distribution: RoleDistributionItem[];
+  daily_trends: DailyTrendItem[];
+  top_teams: TopPerformingTeamItem[];
+  managed_hackathons: ManagedHackathonRef[];
+}
+
+export const reportsApi = {
+  getOrganizerReports: async (
+    hackathonId?: number
+  ): Promise<OrganizerReportsOverviewOut> => {
+    const qs = hackathonId ? `?hackathon_id=${hackathonId}` : "";
+    return apiFetch<OrganizerReportsOverviewOut>(`/reports/organizer${qs}`);
+  },
+};
+
+
 
 
 

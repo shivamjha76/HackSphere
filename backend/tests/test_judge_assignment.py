@@ -86,3 +86,13 @@ def test_manual_assignment_and_delete():
         res_del = client.delete(f"/api/v1/judging/assignments/{a_id}", headers=headers)
         assert res_del.status_code == 200
         assert "deleted successfully" in res_del.json()["message"]
+
+    # Always ensure Rohan Mehta is assigned to CodeCrafters (Team 1) to preserve seed baseline
+    from app.db.session import SessionLocal
+    from app.models.judging import JudgeAssignment
+    with SessionLocal() as s:
+        existing = s.query(JudgeAssignment).filter_by(hackathon_id=1, judge_id=1, team_id=1).first()
+        if not existing:
+            s.add(JudgeAssignment(hackathon_id=1, judge_id=1, team_id=1, status="completed"))
+            s.commit()
+
