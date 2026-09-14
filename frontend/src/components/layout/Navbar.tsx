@@ -90,7 +90,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span>Explore</span>
               </Link>
               <Link
-                href="#organizations"
+                href="/orgs/technova-labs"
                 className="hover:text-blue-600 transition-colors flex items-center gap-1.5"
               >
                 <Building2 className="w-4 h-4 text-slate-400" />
@@ -252,7 +252,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>Explore Hackathons</span>
             </Link>
             <Link
-              href="#organizations"
+              href="/orgs/technova-labs"
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"
             >
