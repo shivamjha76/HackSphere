@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { Navbar } from "@/components/layout/Navbar";
+import { GlobalSearchModal } from "@/components/layout/GlobalSearchModal";
 import { RoleSwitcher, ROLE_CONFIGS } from "@/components/RoleSwitcher";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -27,6 +29,9 @@ import {
   Zap,
   Layers,
   ArrowRight,
+  Command,
+  Bell,
+  Globe,
 } from "lucide-react";
 
 interface HealthData {
@@ -44,6 +49,7 @@ export default function HomePage() {
   const [loadingHealth, setLoadingHealth] = useState(true);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<"login" | "signup">("login");
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   useEffect(() => {
     async function checkBackend() {
@@ -72,88 +78,29 @@ export default function HomePage() {
     setAuthModalOpen(true);
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase();
-  };
-
   const activeConfig = activeRole ? ROLE_CONFIGS[activeRole] : null;
 
   return (
     <main className="min-h-screen bg-slate-50/60 pb-16">
-      {/* Top Navigation Bar with Dynamic Auth & Role Switcher */}
-      <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
-          <BrandLogo variant="full" />
-
-          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
-            <span className="text-blue-600 font-semibold cursor-pointer">Explore</span>
-            <span className="hover:text-slate-900 cursor-pointer">Organizations</span>
-            <span className="hover:text-slate-900 cursor-pointer">How It Works</span>
-            <span className="hover:text-slate-900 cursor-pointer">Prizes</span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {isAuthenticated && user ? (
-              <div className="flex items-center gap-3">
-                {/* Role Switcher Component */}
-                <RoleSwitcher />
-
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-9 w-9 ring-1 ring-blue-500/20">
-                    <AvatarFallback>{getInitials(user.full_name)}</AvatarFallback>
-                  </Avatar>
-                  <div className="hidden sm:block text-left text-xs leading-tight">
-                    <p className="font-semibold text-slate-900">{user.full_name}</p>
-                    <p className="text-slate-500">
-                      Level {user.level} • {user.xp} XP
-                    </p>
-                  </div>
-                </div>
-
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={logout}
-                  className="text-slate-500 hover:text-red-600 cursor-pointer"
-                  title="Sign Out"
-                >
-                  <LogOut className="w-4 h-4" />
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="ghost" onClick={() => openAuth("login")}>
-                  <LogIn className="w-4 h-4 mr-1" />
-                  Sign In
-                </Button>
-                <Button size="sm" variant="default" onClick={() => openAuth("signup")}>
-                  <UserPlus className="w-4 h-4 mr-1" />
-                  Sign Up
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
+      {/* Global Top Navigation Bar */}
+      <Navbar
+        onOpenAuth={openAuth}
+        onOpenSearch={() => setSearchModalOpen(true)}
+      />
 
       {/* Main Container */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 space-y-8">
         {/* Step Banner */}
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold shadow-2xs">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Step 11 Complete: Multi-Role Context Switcher Active (Phase 3 100% Complete ✅)</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold shadow-2xs">
+            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+            <span>Step 12 Complete: Global Top Navigation Bar Active (Phase 4 Started 🚀)</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            Authentication & Multi-Role Architecture
+            One Platform for Complete Hackathon Management
           </h1>
-          <p className="text-slate-600 max-w-xl mx-auto text-sm sm:text-base">
-            Ek Email = Ek Account: Users hold multiple roles and switch active perspectives effortlessly without re-authenticating.
+          <p className="text-slate-600 max-w-2xl mx-auto text-sm sm:text-base">
+            Enterprise top navigation shell: Global <kbd className="px-1.5 py-0.5 text-xs font-mono bg-white border border-slate-300 rounded shadow-2xs">⌘K</kbd> Command Search, Notifications Center, Language Switcher, Active Role Switcher, and Gamified Profile Menu.
           </p>
         </div>
 
@@ -386,6 +333,12 @@ export default function HomePage() {
         open={authModalOpen}
         onOpenChange={setAuthModalOpen}
         defaultTab={authModalTab}
+      />
+
+      {/* Global Command & Search Palette (⌘K) */}
+      <GlobalSearchModal
+        open={searchModalOpen}
+        onOpenChange={setSearchModalOpen}
       />
     </main>
   );
