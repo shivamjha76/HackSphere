@@ -8,6 +8,7 @@ import {
   NavItem,
 } from "./sidebarNavConfig";
 import { ROLE_CONFIGS } from "@/components/RoleSwitcher";
+import { XpLevelCard } from "@/components/gamification/XpLevelCard";
 import { Badge } from "@/components/ui/badge";
 import {
   ChevronLeft,
@@ -205,6 +206,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* 3. Bottom Actions & Quick Switch */}
       <div className="p-3 border-t border-slate-100 space-y-2 bg-slate-50/50">
+        {/* Participant Gamification Card (Chapter 25 & UI Screens) */}
+        {currentRole === "participant" && (
+          <XpLevelCard variant="compact" isCollapsed={isCollapsed} />
+        )}
+
         {/* "View as Participant" Quick Toggle (Organizers & Judges) */}
         {canSwitchToParticipant && (
           <button

@@ -14,6 +14,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { GlobalSearchModal } from "@/components/layout/GlobalSearchModal";
 import { RoleSwitcher, ROLE_CONFIGS } from "@/components/RoleSwitcher";
+import { XpLevelCard } from "@/components/gamification/XpLevelCard";
 import { useAuth } from "@/context/AuthContext";
 import {
   Activity,
@@ -94,15 +95,15 @@ export default function HomePage() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 space-y-8">
         {/* Step Banner */}
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold shadow-2xs">
-            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-            <span>Step 13 Complete: Role-Based Dynamic Left Sidebar Active (Phase 4 In Progress ⚡)</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold shadow-2xs">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Step 14 Complete: Participant Gamification Widget Active (Phase 4 100% COMPLETE ✅)</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
             One Platform for Complete Hackathon Management
           </h1>
           <p className="text-slate-600 max-w-2xl mx-auto text-sm sm:text-base">
-            Enterprise top navigation shell and role-based dynamic sidebar: Participant, Organizer, Judge, and Super Admin views transform seamlessly with active context.
+            Common UI shell & gamification engine are complete: Global Top Navigation, Command Palette, Dynamic Role Sidebar, and Level/XP Progression Card.
           </p>
         </div>
 
@@ -261,7 +262,12 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="p-5 rounded-2xl bg-white border border-dashed border-slate-300 text-center space-y-2 py-8">
+              {/* Participant Gamification Card (Chapter 25) */}
+              {(!activeRole || activeRole === "participant") && (
+                <XpLevelCard variant="detailed" />
+              )}
+
+              <div className="p-5 rounded-2xl bg-white border border-dashed border-slate-300 text-center space-y-2 py-6">
                 <Sparkles className="w-6 h-6 text-blue-600 mx-auto" />
                 <h4 className="text-sm font-bold text-slate-800">
                   Ready to connect: {activeNav.replace(/-/g, " ")}
