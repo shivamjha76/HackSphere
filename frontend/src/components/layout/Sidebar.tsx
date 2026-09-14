@@ -154,10 +154,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             router.push("/organizer/hackathons/create");
                           } else if (item.id === "submissions") {
                             router.push("/submissions");
+                          } else if (item.id === "judging") {
+                            router.push("/organizer/hackathons/ai-hack-summit-2026/judges");
                           } else if (item.id === "winners") {
                             router.push("/certificates");
                           } else if (item.id === "teams") {
                             router.push("/teams");
+                          } else if (item.id === "announcements") {
+                            router.push("/organizer/announcements");
                           }
                         } else {
                           if (item.id === "dashboard") router.push("/dashboard");

@@ -73,6 +73,9 @@ class Hackathon(Base, TimestampMixin):
     certificates: Mapped[List["Certificate"]] = relationship(
         "Certificate", back_populates="hackathon", cascade="all, delete-orphan"
     )
+    announcements: Mapped[List["Announcement"]] = relationship(
+        "Announcement", back_populates="hackathon", cascade="all, delete-orphan"
+    )
 
 
 class HackathonRegistration(Base):

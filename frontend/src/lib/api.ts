@@ -893,4 +893,138 @@ export const judgingApi = {
   },
 };
 
+// -------------------------------------------------------------------------
+// ANNOUNCEMENTS & LIVE BROADCAST APIS
+// -------------------------------------------------------------------------
+
+export interface AnnouncementAuthorBrief {
+  id: number;
+  full_name: string;
+  email: string;
+  avatar_url?: string | null;
+}
+
+export interface Announcement {
+  id: number;
+  hackathon_id: number;
+  organization_id: number;
+  author_id?: number | null;
+  author_name?: string | null;
+  author?: AnnouncementAuthorBrief | null;
+  title: string;
+  content: string;
+  priority: "normal" | "important" | "urgent";
+  status: "published" | "scheduled" | "draft";
+  target_audience: "all" | "participants" | "judges" | "team_leaders";
+  is_pinned: boolean;
+  scheduled_for?: string | null;
+  views_count: number;
+  created_at: string;
+  updated_at?: string | null;
+}
+
+export interface AnnouncementCreateInput {
+  title: string;
+  content: string;
+  priority?: "normal" | "important" | "urgent";
+  status?: "published" | "scheduled" | "draft";
+  target_audience?: "all" | "participants" | "judges" | "team_leaders";
+  is_pinned?: boolean;
+  scheduled_for?: string | null;
+}
+
+export interface AnnouncementUpdateInput {
+  title?: string;
+  content?: string;
+  priority?: "normal" | "important" | "urgent";
+  status?: "published" | "scheduled" | "draft";
+  target_audience?: "all" | "participants" | "judges" | "team_leaders";
+  is_pinned?: boolean;
+  scheduled_for?: string | null;
+}
+
+export interface AnnouncementStats {
+  total_announcements: number;
+  published_count: number;
+  scheduled_count: number;
+  draft_count: number;
+  total_views: number;
+  published_percentage: number;
+  scheduled_percentage: number;
+}
+
+export const announcementsApi = {
+  getAnnouncements: async (
+    slugOrId: string,
+    params?: { status?: string; priority?: string; search?: string }
+  ): Promise<Announcement[]> => {
+    const query = new URLSearchParams();
+    if (params?.status && params.status !== "all") query.set("status", params.status);
+    if (params?.priority && params.priority !== "all") query.set("priority", params.priority);
+    if (params?.search) query.set("search", params.search);
+
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return apiFetch<Announcement[]>(`/announcements/hackathons/${slugOrId}${qs}`, {
+      method: "GET",
+    });
+  },
+
+  getAnnouncementStats: async (slugOrId: string): Promise<AnnouncementStats> => {
+    return apiFetch<AnnouncementStats>(`/announcements/hackathons/${slugOrId}/stats`, {
+      method: "GET",
+    });
+  },
+
+  createAnnouncement: async (
+    slugOrId: string,
+    payload: AnnouncementCreateInput
+  ): Promise<Announcement> => {
+    return apiFetch<Announcement>(`/announcements/hackathons/${slugOrId}`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateAnnouncement: async (
+    slugOrId: string,
+    id: number,
+    payload: AnnouncementUpdateInput
+  ): Promise<Announcement> => {
+    return apiFetch<Announcement>(`/announcements/hackathons/${slugOrId}/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deleteAnnouncement: async (
+    slugOrId: string,
+    id: number
+  ): Promise<{ message: string; id: number }> => {
+    return apiFetch<{ message: string; id: number }>(
+      `/announcements/hackathons/${slugOrId}/${id}`,
+      {
+        method: "DELETE",
+      }
+    );
+  },
+
+  togglePinAnnouncement: async (slugOrId: string, id: number): Promise<Announcement> => {
+    return apiFetch<Announcement>(`/announcements/hackathons/${slugOrId}/${id}/pin`, {
+      method: "POST",
+    });
+  },
+
+  recordAnnouncementView: async (
+    slugOrId: string,
+    id: number
+  ): Promise<{ id: number; views_count: number }> => {
+    return apiFetch<{ id: number; views_count: number }>(
+      `/announcements/hackathons/${slugOrId}/${id}/view`,
+      {
+        method: "POST",
+      }
+    );
+  },
+};
+
 

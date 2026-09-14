@@ -25,6 +25,7 @@ import {
   Layers,
   Settings,
   Scale,
+  Megaphone,
 } from "lucide-react";
 
 // Fallback preview data in case of network or unseeded tournament
@@ -267,6 +268,14 @@ export default function HackathonManagementPage() {
                 >
                   <Scale className="w-3.5 h-3.5 text-violet-400" />
                   <span>Judge Assignment Console</span>
+                </Link>
+
+                <Link
+                  href={`/organizer/hackathons/${data.slug}/announcements`}
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 flex items-center gap-2 transition-all cursor-pointer"
+                >
+                  <Megaphone className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Broadcast Announcements</span>
                 </Link>
 
                 <Link

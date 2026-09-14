@@ -11,7 +11,7 @@ import { HackathonNavTabs, TabId } from "@/components/hackathons/details/Hackath
 import { RegistrationWidget } from "@/components/hackathons/details/RegistrationWidget";
 import { RegistrationModal } from "@/components/hackathons/details/RegistrationModal";
 import { RubricTable } from "@/components/hackathons/details/RubricTable";
-import { HackathonDetailOut, hackathonsApi } from "@/lib/api";
+import { HackathonDetailOut, hackathonsApi, announcementsApi, Announcement } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -29,6 +29,11 @@ import {
   ChevronDown,
   Loader2,
   FileCheck,
+  Megaphone,
+  Pin,
+  Radio,
+  Eye,
+  AlertTriangle,
 } from "lucide-react";
 
 // Robust Fallback Seeded Hackathon for instant SSR or backend offline
@@ -148,12 +153,17 @@ export default function HackathonDetailPage() {
   const [authTab, setAuthTab] = useState<"login" | "signup">("login");
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
 
-  // Fetch hackathon details
+  // Fetch hackathon details & live announcements
   const fetchDetail = async () => {
     try {
-      const data = await hackathonsApi.getDetail(slug);
+      const [data, announcementsList] = await Promise.all([
+        hackathonsApi.getDetail(slug),
+        announcementsApi.getAnnouncements(slug).catch(() => []),
+      ]);
       setHackathon(data);
+      setAnnouncements(announcementsList);
     } catch (err) {
       console.warn("Using fallback hackathon details for:", slug);
       if (slug !== "ai-hack-summit-2026") {
@@ -300,6 +310,7 @@ export default function HackathonDetailPage() {
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         criteriaCount={hackathon.evaluation_criteria?.length || 6}
+        announcementsCount={announcements.length}
       />
 
       {/* Content Layout: Main Tabs Column (8 cols) + Sticky Registration Widget (4 cols) */}
@@ -644,6 +655,110 @@ export default function HackathonDetailPage() {
             {activeTab === "rubric" && (
               <div className="animate-in fade-in duration-200">
                 <RubricTable criteria={hackathon.evaluation_criteria || []} />
+              </div>
+            )}
+
+            {/* TAB: ANNOUNCEMENTS (Chapter 18 & UI Screen #30) */}
+            {activeTab === "announcements" && (
+              <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-xs space-y-6 animate-in fade-in duration-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                      <Megaphone className="w-5 h-5 text-blue-600" />
+                      Live Tournament Announcements
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Official broadcast updates, schedule milestones, and urgent announcements from organizers.
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="text-xs font-semibold px-3 py-1 bg-blue-50 text-blue-700 border-blue-200 self-start sm:self-auto">
+                    {announcements.length} {announcements.length === 1 ? "Broadcast" : "Broadcasts"}
+                  </Badge>
+                </div>
+
+                {announcements.length === 0 ? (
+                  <div className="p-10 text-center rounded-xl bg-slate-50 border border-slate-200/60 space-y-2">
+                    <Megaphone className="w-8 h-8 text-slate-400 mx-auto" />
+                    <h4 className="text-sm font-bold text-slate-700">No Announcements Yet</h4>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                      Organizers have not broadcast any updates yet. Check back once hacking commences!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {announcements.map((a) => {
+                      const formatDate = (isoStr: string) => {
+                        try {
+                          return new Date(isoStr).toLocaleDateString("en-US", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          });
+                        } catch {
+                          return isoStr;
+                        }
+                      };
+
+                      return (
+                        <div
+                          key={a.id}
+                          className={`p-5 rounded-xl border transition-all ${
+                            a.is_pinned
+                              ? "bg-gradient-to-r from-amber-50/50 via-white to-white border-amber-300/80 shadow-xs"
+                              : "bg-white border-slate-200 hover:border-blue-300 shadow-2xs"
+                          }`}
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
+                            <div className="flex flex-wrap items-center gap-2">
+                              {a.is_pinned && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                                  <Pin className="w-3 h-3 fill-amber-700 text-amber-700" />
+                                  Pinned
+                                </span>
+                              )}
+
+                              {a.priority === "urgent" ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-100 text-rose-700 border border-rose-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-ping mr-0.5" />
+                                  Urgent Notice
+                                </span>
+                              ) : a.priority === "important" ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                                  <AlertTriangle className="w-3 h-3 text-amber-600" />
+                                  Important
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-700">
+                                  Standard
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                              <span className="flex items-center gap-1">
+                                <Eye className="w-3 h-3 text-slate-400" />
+                                {a.views_count} views
+                              </span>
+                              <span>•</span>
+                              <span>{formatDate(a.created_at)}</span>
+                            </div>
+                          </div>
+
+                          <div className="mt-3 space-y-1.5">
+                            <h3 className="text-base font-bold text-slate-900 tracking-tight">
+                              {a.title}
+                            </h3>
+                            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-line font-normal">
+                              {a.content}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 

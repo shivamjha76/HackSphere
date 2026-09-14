@@ -13,6 +13,7 @@ from app.models.judging import (
     EvaluationScore,
 )
 from app.models.certificate import Certificate
+from app.models.announcement import Announcement
 
 __all__ = [
     "Base",
@@ -33,4 +34,5 @@ __all__ = [
     "Evaluation",
     "EvaluationScore",
     "Certificate",
+    "Announcement",
 ]

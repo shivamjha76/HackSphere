@@ -9,20 +9,23 @@ import {
   ShieldCheck,
   Scale,
   HelpCircle,
+  Megaphone,
 } from "lucide-react";
 
-export type TabId = "overview" | "schedule" | "prizes" | "rules" | "rubric" | "faqs";
+export type TabId = "overview" | "schedule" | "prizes" | "rules" | "rubric" | "announcements" | "faqs";
 
 interface HackathonNavTabsProps {
   activeTab: TabId;
   onSelectTab: (tab: TabId) => void;
   criteriaCount?: number;
+  announcementsCount?: number;
 }
 
 export const HackathonNavTabs: React.FC<HackathonNavTabsProps> = ({
   activeTab,
   onSelectTab,
   criteriaCount = 0,
+  announcementsCount = 0,
 }) => {
   const tabs = [
     { id: "overview", label: "Overview", icon: FileText },
@@ -34,6 +37,12 @@ export const HackathonNavTabs: React.FC<HackathonNavTabsProps> = ({
       label: "Judging Rubric",
       icon: Scale,
       badge: criteriaCount > 0 ? `${criteriaCount}` : undefined,
+    },
+    {
+      id: "announcements",
+      label: "Announcements",
+      icon: Megaphone,
+      badge: announcementsCount > 0 ? `${announcementsCount}` : undefined,
     },
     { id: "faqs", label: "FAQs", icon: HelpCircle },
   ];

@@ -26,6 +26,7 @@ import {
   Sparkles,
   ExternalLink,
   Layers,
+  Megaphone,
 } from "lucide-react";
 
 const FALLBACK_OVERVIEW: HackathonJudgesOverviewOut = {
@@ -278,6 +279,14 @@ export default function HackathonJudgesPage() {
 
               {/* Action Buttons */}
               <div className="flex items-center gap-3 shrink-0 flex-wrap">
+                <Link
+                  href={`/organizer/hackathons/${slug}/announcements`}
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 flex items-center gap-2 transition-all cursor-pointer"
+                >
+                  <Megaphone className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Broadcast Announcements</span>
+                </Link>
+
                 <Link
                   href={`/organizer/hackathons/${slug}/manage`}
                   className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white bg-slate-900/80 hover:bg-slate-800 border border-white/10 flex items-center gap-2 transition-all cursor-pointer"

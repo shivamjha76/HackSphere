@@ -26,6 +26,7 @@ from app.models import (
     Evaluation,
     EvaluationScore,
     Certificate,
+    Announcement,
 )
 
 
@@ -500,6 +501,77 @@ def seed_database():
             db.add(cert)
             db.flush()
         print("[+] Verified tamper-proof certificate: HS-2026-WINNER-001.")
+
+        # 11. Seed Announcements matching Screen #30
+        announcements_data = [
+            {
+                "title": "Welcome to AI Hack Summit 2026!",
+                "content": "We're excited to have you all here. Get ready to build, innovate, and win amazing prizes across AI and Agentic development tracks!",
+                "priority": "important",
+                "status": "published",
+                "target_audience": "all",
+                "is_pinned": True,
+                "views_count": 1240,
+                "created_at": datetime.now(timezone.utc) - timedelta(days=2),
+            },
+            {
+                "title": "Schedule Update: Submission Deadline Extended",
+                "content": "The final submission deadline has been extended by 2 hours. New project lock deadline: Today at 11:59 PM IST.",
+                "priority": "urgent",
+                "status": "published",
+                "target_audience": "participants",
+                "is_pinned": True,
+                "views_count": 856,
+                "created_at": datetime.now(timezone.utc) - timedelta(hours=6),
+            },
+            {
+                "title": "Exciting Prizes Await!",
+                "content": "Check out our amazing prize pool worth $25,000 USD + ₹50,000 INR and exclusive goodies, swag kits, and venture credits for top teams.",
+                "priority": "normal",
+                "status": "published",
+                "target_audience": "all",
+                "is_pinned": False,
+                "views_count": 743,
+                "created_at": datetime.now(timezone.utc) - timedelta(days=1),
+            },
+            {
+                "title": "Judging Round Begins Tomorrow",
+                "content": "Judging round starts tomorrow morning. Appointed judges will evaluate problem definition, innovation, and technical implementation.",
+                "priority": "important",
+                "status": "scheduled",
+                "target_audience": "judges",
+                "is_pinned": False,
+                "scheduled_for": datetime.now(timezone.utc) + timedelta(days=1),
+                "views_count": 0,
+                "created_at": datetime.now(timezone.utc) - timedelta(hours=3),
+            },
+            {
+                "title": "Code of Conduct & Original Work Reminder",
+                "content": "Please ensure all submissions follow our code of conduct. Pre-built proprietary products are disqualified; let's keep it respectful and fair.",
+                "priority": "normal",
+                "status": "published",
+                "target_audience": "all",
+                "is_pinned": False,
+                "views_count": 612,
+                "created_at": datetime.now(timezone.utc) - timedelta(days=3),
+            },
+        ]
+
+        for a_data in announcements_data:
+            existing = db.query(Announcement).filter_by(
+                hackathon_id=ai_hack.id,
+                title=a_data["title"],
+            ).first()
+            if not existing:
+                a_obj = Announcement(
+                    hackathon_id=ai_hack.id,
+                    organization_id=org.id,
+                    author_id=users["organizer@technova.com"].id,
+                    **a_data,
+                )
+                db.add(a_obj)
+        db.flush()
+        print("[+] Seeded Hackathon broadcast announcements matching Screen #30.")
 
         db.commit()
         print("\n[SUCCESS] HackSphere database seeded cleanly with complete mock ecosystem!")
