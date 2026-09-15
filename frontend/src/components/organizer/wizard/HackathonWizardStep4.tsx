@@ -1,257 +1,344 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
-  CheckCircle2,
-  AlertTriangle,
-  Globe,
+  ShieldAlert,
   Users,
-  Award,
-  Calendar,
-  Sparkles,
+  Scale,
+  Plus,
+  Trash2,
+  Lock,
   ArrowLeft,
-  Loader2,
-  FileText,
-  ShieldCheck,
-  Send,
+  ArrowRight,
   Save,
 } from "lucide-react";
-import { HackathonCreatePayload } from "@/lib/api";
+import { HackathonCreatePayload, CriterionCreatePayload } from "@/lib/api";
 
 interface HackathonWizardStep4Props {
   formData: HackathonCreatePayload;
+  onChange: (fields: Partial<HackathonCreatePayload>) => void;
+  onNext: () => void;
   onBack: () => void;
-  onSubmit: (status: "draft" | "published") => void;
-  isSubmitting: boolean;
-  errorMessage?: string | null;
+  onSaveDraft: () => void;
+  isSaving?: boolean;
 }
+
+const DEFAULT_CRITERIA: CriterionCreatePayload[] = [
+  {
+    name: "Problem Definition & Relevance",
+    description: "Clarity, significance, and real-world relevance of the challenge tackled.",
+    max_score: 20,
+    weight: 1.0,
+  },
+  {
+    name: "Innovation & Creativity",
+    description: "Originality of the concept and novel architectural thinking.",
+    max_score: 20,
+    weight: 1.0,
+  },
+  {
+    name: "Technical Complexity & Execution",
+    description: "Code cleanliness, architecture resilience, and effective use of modern stack.",
+    max_score: 25,
+    weight: 1.0,
+  },
+  {
+    name: "Solution Functionality & Working Demo",
+    description: "Whether the solution performs end-to-end as intended during live demonstration.",
+    max_score: 25,
+    weight: 1.0,
+  },
+  {
+    name: "Presentation & Communication",
+    description: "Quality of slides, video pitch, documentation, and demo clarity.",
+    max_score: 10,
+    weight: 1.0,
+  },
+];
 
 export const HackathonWizardStep4: React.FC<HackathonWizardStep4Props> = ({
   formData,
+  onChange,
+  onNext,
   onBack,
-  onSubmit,
-  isSubmitting,
-  errorMessage,
+  onSaveDraft,
+  isSaving = false,
 }) => {
-  const criteria = formData.criteria || [];
-  const totalScore = criteria.reduce((sum, c) => sum + (Number(c.max_score) || 0), 0);
+  const [criteria, setCriteria] = useState<CriterionCreatePayload[]>(
+    formData.criteria && formData.criteria.length > 0 ? formData.criteria : DEFAULT_CRITERIA
+  );
 
-  const checklist = [
-    {
-      title: "Core Identity & Title",
-      valid: !!formData.title && formData.title.trim().length >= 3,
-      desc: formData.title || "Missing title",
-    },
-    {
-      title: "Format & Squad Constraints",
-      valid: !!formData.mode && (formData.min_team_size || 1) <= (formData.max_team_size || 4),
-      desc: `${formData.mode?.toUpperCase()} • Squad: ${formData.min_team_size || 1} to ${
-        formData.max_team_size || 4
-      } devs`,
-    },
-    {
-      title: "Schedule & Milestones",
-      valid: !!formData.registration_start || !!formData.submission_end,
-      desc: formData.submission_end
-        ? `Submission deadline: ${new Date(formData.submission_end).toLocaleDateString()}`
-        : "Dates configured or open-ended",
-    },
-    {
-      title: "Scoring Rubric & Criteria",
-      valid: criteria.length > 0,
-      desc:
-        criteria.length > 0
-          ? `${criteria.length} criteria defined (${totalScore} max points)`
-          : "No rubric criteria added yet (optional)",
-    },
-  ];
+  const handleAddCriterion = () => {
+    setCriteria((prev) => [
+      ...prev,
+      {
+        name: `Criterion ${prev.length + 1}`,
+        description: "Evaluation aspect and scoring guidelines.",
+        max_score: 20,
+        weight: 1.0,
+      },
+    ]);
+  };
+
+  const handleRemoveCriterion = (index: number) => {
+    setCriteria((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleCriterionChange = (
+    index: number,
+    field: keyof CriterionCreatePayload,
+    value: any
+  ) => {
+    setCriteria((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onChange({ criteria });
+    onNext();
+  };
+
+  const totalScore = criteria.reduce((sum, c) => sum + (c.max_score || 0), 0);
 
   return (
-    <div className="space-y-8 animate-fadeIn">
-      {/* Error Message if any */}
-      {errorMessage && (
-        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center gap-3 text-rose-300 text-xs">
-          <AlertTriangle className="w-5 h-5 shrink-0 text-rose-400" />
-          <span>{errorMessage}</span>
-        </div>
-      )}
+    <form onSubmit={handleSubmit} className="space-y-6 animate-in fade-in duration-200">
+      {/* Step Header */}
+      <div className="pb-4 border-b border-slate-800">
+        <h2 className="text-xl font-bold text-white tracking-tight">Rules & Eligibility</h2>
+        <p className="text-xs text-slate-400 mt-1">
+          Define participant eligibility, team size limits, team freeze policy, and scoring rubrics.
+        </p>
+      </div>
 
-      {/* Main Review Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left: Summary Checklist */}
-        <div className="lg:col-span-7 space-y-6">
-          <div className="bg-slate-900/50 border border-slate-800/80 rounded-3xl p-6 sm:p-8 backdrop-blur-md space-y-6">
-            <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-white tracking-wide">
-                  Pre-Launch Verification
-                </h2>
-                <p className="text-xs text-slate-400">
-                  Review configuration readiness before initiating tournament publication.
-                </p>
-              </div>
+      <div className="space-y-6">
+        {/* 1. Team Size Limits & Quotas */}
+        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-4">
+          <div className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider">
+            <Users className="w-4 h-4 text-primary-400" />
+            <span>Team Configuration & Cohort Size</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Min Team Size <span className="text-rose-400">*</span>
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={10}
+                value={formData.min_team_size || 1}
+                onChange={(e) => onChange({ min_team_size: parseInt(e.target.value) || 1 })}
+                className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-hidden focus:border-primary-500 font-bold"
+              />
             </div>
 
-            <div className="space-y-3">
-              {checklist.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-start gap-3.5 p-4 rounded-2xl bg-slate-950/50 border border-slate-800/70"
-                >
-                  <div
-                    className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                      item.valid
-                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
-                        : "bg-amber-500/10 text-amber-400 border border-amber-500/30"
-                    }`}
-                  >
-                    {item.valid ? (
-                      <CheckCircle2 className="w-4 h-4" />
-                    ) : (
-                      <AlertTriangle className="w-4 h-4" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-white">{item.title}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Max Team Size <span className="text-rose-400">*</span>
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={10}
+                value={formData.max_team_size || 4}
+                onChange={(e) => onChange({ max_team_size: parseInt(e.target.value) || 4 })}
+                className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-hidden focus:border-primary-500 font-bold"
+              />
             </div>
 
-            {/* Rubrics breakdown table */}
-            {criteria.length > 0 && (
-              <div className="mt-6 pt-5 border-t border-slate-800 space-y-3">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  Configured Scoring Criteria ({criteria.length})
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {criteria.map((c, i) => (
-                    <div
-                      key={i}
-                      className="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs"
-                    >
-                      <span className="text-slate-300 truncate font-medium">{c.name}</span>
-                      <span className="font-mono text-cyan-400 font-bold ml-2">
-                        {c.max_score} pts
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Max Participants (Optional)
+              </label>
+              <input
+                type="number"
+                value={formData.max_participants || ""}
+                onChange={(e) =>
+                  onChange({
+                    max_participants: e.target.value ? parseInt(e.target.value) : undefined,
+                  })
+                }
+                placeholder="Unlimited (e.g. 5000)"
+                className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-hidden focus:border-primary-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Max Teams (Optional)
+              </label>
+              <input
+                type="number"
+                value={formData.max_teams || ""}
+                onChange={(e) =>
+                  onChange({
+                    max_teams: e.target.value ? parseInt(e.target.value) : undefined,
+                  })
+                }
+                placeholder="Unlimited (e.g. 1000)"
+                className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-hidden focus:border-primary-500"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Right: Live Discovery Card Preview */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Live Portal Card Preview</span>
+        {/* 2. Eligibility & Team Freeze Policy */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              Eligibility Scope
+            </label>
+            <textarea
+              rows={3}
+              value={
+                formData.eligibility ||
+                "Open to all software developers, designers, data scientists, and university students globally. No prior hackathon experience required."
+              }
+              onChange={(e) => onChange({ eligibility: e.target.value })}
+              className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-hidden focus:border-primary-500 resize-none text-[11px]"
+            />
           </div>
 
-          <div className="relative rounded-3xl bg-slate-900 border border-slate-800 overflow-hidden shadow-2xl group hover:border-cyan-500/40 transition-all">
-            {/* Banner gradient */}
-            <div className="h-32 bg-gradient-to-tr from-cyan-900/60 via-blue-900/40 to-violet-900/60 relative p-4 flex items-end">
-              <div className="absolute top-3 right-3 flex items-center gap-2">
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                  {formData.mode?.toUpperCase() || "ONLINE"}
-                </span>
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-500/40">
-                  {formData.theme || "INNOVATION"}
-                </span>
-              </div>
-              <p className="text-[11px] font-medium text-slate-300 bg-slate-950/60 px-2.5 py-1 rounded-lg backdrop-blur-md">
-                Hosted by your Organization
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+              <span>Code of Conduct & Competition Rules</span>
+              <span className="text-[10px] text-amber-400 font-bold inline-flex items-center gap-1">
+                <Lock className="w-3 h-3" />
+                <span>Team Freeze Active</span>
+              </span>
+            </label>
+            <textarea
+              rows={3}
+              value={
+                formData.rules ||
+                "1. All project source code must be created during the event window.\n2. Pre-built proprietary products will be disqualified.\n3. Roster freezes once project submission is initiated."
+              }
+              onChange={(e) => onChange({ rules: e.target.value })}
+              className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-hidden focus:border-primary-500 resize-none text-[11px]"
+            />
+          </div>
+        </div>
+
+        {/* 3. Evaluation Rubrics Builder */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Scale className="w-4 h-4 text-amber-400" />
+                <span>Judge Evaluation Rubric Criteria</span>
+              </h3>
+              <p className="text-[11px] text-slate-400">
+                Rubric dimensions used by appointed judges to score submitted projects. Total:{" "}
+                <strong className="text-amber-300">{totalScore} Points</strong>
               </p>
             </div>
+            <button
+              type="button"
+              onClick={handleAddCriterion}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-semibold transition"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Criterion</span>
+            </button>
+          </div>
 
-            {/* Card Content */}
-            <div className="p-5 space-y-4">
-              <div>
-                <h3 className="text-lg font-bold text-white leading-tight">
-                  {formData.title || "Untitled Hackathon"}
-                </h3>
-                <p className="text-xs text-slate-400 mt-1 line-clamp-2">
-                  {formData.tagline ||
-                    formData.short_description ||
-                    "No tagline specified for this tournament."}
-                </p>
+          <div className="space-y-3">
+            {criteria.map((c, idx) => (
+              <div
+                key={idx}
+                className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2.5"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-center">
+                  <div className="sm:col-span-3 flex items-center gap-2">
+                    <span className="text-xs font-mono font-bold text-slate-500 shrink-0">
+                      0{idx + 1}
+                    </span>
+                    <input
+                      type="text"
+                      value={c.name}
+                      onChange={(e) => handleCriterionChange(idx, "name", e.target.value)}
+                      placeholder="Criterion Name"
+                      className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-hidden focus:border-primary-500 font-semibold"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 flex items-center gap-1.5 bg-slate-900 border border-slate-700/80 rounded-xl px-2.5 py-1 text-xs">
+                      <span className="text-[10px] text-slate-400">Max:</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={100}
+                        value={c.max_score}
+                        onChange={(e) =>
+                          handleCriterionChange(idx, "max_score", parseInt(e.target.value) || 20)
+                        }
+                        className="w-12 bg-transparent text-white font-bold text-xs focus:outline-hidden"
+                      />
+                      <span className="text-[10px] text-slate-400">pts</span>
+                    </div>
+
+                    {criteria.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCriterion(idx)}
+                        className="text-slate-500 hover:text-rose-400 p-1.5 transition"
+                        title="Remove Criterion"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <input
+                  type="text"
+                  value={c.description || ""}
+                  onChange={(e) => handleCriterionChange(idx, "description", e.target.value)}
+                  placeholder="Scoring guideline description for appointed judges..."
+                  className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 text-[11px] text-slate-300 focus:outline-hidden focus:border-primary-500"
+                />
               </div>
-
-              {formData.prize_pool_summary && (
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2 text-amber-300 text-xs font-bold">
-                  <Award className="w-4 h-4 text-amber-400" />
-                  <span>{formData.prize_pool_summary}</span>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80 text-[11px] text-slate-400">
-                <div className="flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>
-                    Squads: {formData.min_team_size || 1}-{formData.max_team_size || 4} devs
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-violet-400" />
-                  <span>
-                    {formData.submission_end
-                      ? new Date(formData.submission_end).toLocaleDateString()
-                      : "Schedule Pending"}
-                  </span>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Action Triggers */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-800">
+      {/* Bottom Action Controls */}
+      <div className="pt-6 border-t border-slate-800 flex items-center justify-between">
         <button
           type="button"
-          disabled={isSubmitting}
-          onClick={onBack}
-          className="w-full sm:w-auto px-6 py-3 rounded-xl border border-slate-700 hover:border-slate-500 text-slate-300 font-semibold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+          onClick={onSaveDraft}
+          disabled={isSaving}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition disabled:opacity-50"
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Rubrics</span>
+          <Save className="w-3.5 h-3.5" />
+          <span>Save as Draft</span>
         </button>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+        <div className="flex items-center gap-3">
           <button
             type="button"
-            disabled={isSubmitting}
-            onClick={() => onSubmit("draft")}
-            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-sm font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer"
+            onClick={onBack}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition"
           >
-            {isSubmitting ? (
-              <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
-            ) : (
-              <Save className="w-4 h-4 text-slate-400" />
-            )}
-            <span>Save as Draft</span>
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back</span>
           </button>
-
           <button
-            type="button"
-            disabled={isSubmitting || !formData.title}
-            onClick={() => onSubmit("published")}
-            className="w-full sm:w-auto px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm shadow-lg shadow-cyan-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.02]"
+            type="submit"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold shadow-lg shadow-primary-600/25 transition"
           >
-            {isSubmitting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
-            <span>Publish Hackathon Live</span>
+            <span>Save & Next</span>
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>
-    </div>
+    </form>
   );
 };

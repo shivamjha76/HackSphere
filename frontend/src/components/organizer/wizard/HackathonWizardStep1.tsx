@@ -3,13 +3,14 @@
 import React from "react";
 import {
   Globe,
+  Building2,
+  Upload,
+  Sparkles,
   MapPin,
   Laptop,
-  Users,
-  Eye,
-  Sparkles,
-  Layers,
-  FileText,
+  CheckCircle2,
+  ArrowRight,
+  Save,
 } from "lucide-react";
 import { HackathonCreatePayload } from "@/lib/api";
 
@@ -17,52 +18,53 @@ interface HackathonWizardStep1Props {
   formData: HackathonCreatePayload;
   onChange: (fields: Partial<HackathonCreatePayload>) => void;
   onNext: () => void;
+  onSaveDraft: () => void;
+  isSaving?: boolean;
 }
 
-const THEME_PRESETS = [
-  "Artificial Intelligence & ML",
-  "Web3, Crypto & DeFi",
-  "FinTech & Payments",
-  "Cybersecurity & Cloud",
-  "HealthTech & Bio",
-  "Climate & CleanTech",
-  "Open Innovation",
+const LOGO_PRESETS = [
+  { name: "AI Spark", url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop" },
+  { name: "Code Nexus", url: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=200&auto=format&fit=crop" },
+  { name: "Cyber Shield", url: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=200&auto=format&fit=crop" },
+];
+
+const BANNER_PRESETS = [
+  { name: "Neon Matrix", url: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&auto=format&fit=crop" },
+  { name: "Deep Tech", url: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200&auto=format&fit=crop" },
+  { name: "Future Grid", url: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=1200&auto=format&fit=crop" },
 ];
 
 export const HackathonWizardStep1: React.FC<HackathonWizardStep1Props> = ({
   formData,
   onChange,
   onNext,
+  onSaveDraft,
+  isSaving = false,
 }) => {
-  const isTitleValid = !!formData.title && formData.title.trim().length >= 3;
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isTitleValid) return;
+    if (!formData.title?.trim() || !formData.short_description?.trim()) {
+      alert("Please enter the Hackathon Title and Short Description.");
+      return;
+    }
     onNext();
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 animate-fadeIn">
-      {/* Section 1: Core Identity */}
-      <div className="bg-slate-900/50 border border-slate-800/80 rounded-3xl p-6 sm:p-8 backdrop-blur-md space-y-6">
-        <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-          <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-            <Sparkles className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-white tracking-wide">
-              Hackathon Identity
-            </h2>
-            <p className="text-xs text-slate-400">
-              Set the public title, hook tagline, and overarching category.
-            </p>
-          </div>
-        </div>
+    <form onSubmit={handleSubmit} className="space-y-6 animate-in fade-in duration-200">
+      {/* Step Header matching Screen #58 */}
+      <div className="pb-4 border-b border-slate-800">
+        <h2 className="text-xl font-bold text-white tracking-tight">Basic Information</h2>
+        <p className="text-xs text-slate-400 mt-1">
+          Provide the essential details about your hackathon.
+        </p>
+      </div>
 
-        <div className="space-y-5">
+      <div className="space-y-5">
+        {/* Hackathon Title & Tagline matching Screen #58 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
               Hackathon Title <span className="text-rose-400">*</span>
             </label>
             <input
@@ -70,240 +72,252 @@ export const HackathonWizardStep1: React.FC<HackathonWizardStep1Props> = ({
               required
               value={formData.title || ""}
               onChange={(e) => onChange({ title: e.target.value })}
-              placeholder="e.g., Global AI Agent Sprint 2026"
-              className="w-full bg-slate-950/70 border border-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm transition-all"
+              placeholder="e.g. AI Hack Summit 2025"
+              className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition shadow-inner"
             />
-            {formData.title && formData.title.trim().length > 0 && (
-              <p className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1">
-                <span>URL Slug preview:</span>
-                <span className="font-mono text-cyan-400">
-                  /hackathons/{formData.slug || formData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}
-                </span>
-              </p>
-            )}
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-              Catchy Tagline / Pitch
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              Tagline
             </label>
             <input
               type="text"
               value={formData.tagline || ""}
               onChange={(e) => onChange({ tagline: e.target.value })}
-              placeholder="e.g., Build autonomous multi-agent systems and decentralized workflows"
-              className="w-full bg-slate-950/70 border border-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm transition-all"
+              placeholder="A short and catchy line about your hackathon"
+              className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition shadow-inner"
             />
           </div>
+        </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-              Short Description / Overview
-            </label>
-            <textarea
-              rows={3}
-              value={formData.short_description || ""}
-              onChange={(e) => onChange({ short_description: e.target.value })}
-              placeholder="Summarize the core challenge, incentives, and expected deliverables..."
-              className="w-full bg-slate-950/70 border border-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm transition-all"
-            />
-          </div>
+        {/* Short Description */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+            Short Description <span className="text-rose-400">*</span>
+          </label>
+          <input
+            type="text"
+            required
+            value={formData.short_description || ""}
+            onChange={(e) => onChange({ short_description: e.target.value })}
+            placeholder="In 1-2 lines, explain what your hackathon is about."
+            className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition shadow-inner"
+          />
+        </div>
 
-          {/* Theme Presets */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-              Theme / Domain Category
+        {/* Detailed Description */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+            Detailed Description
+          </label>
+          <textarea
+            rows={4}
+            value={formData.detailed_description || ""}
+            onChange={(e) => onChange({ detailed_description: e.target.value })}
+            placeholder="Describe the problem statement, goals, themes and what participants will build..."
+            className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition shadow-inner resize-none font-mono text-[11px]"
+          />
+        </div>
+
+        {/* Logo & Cover Image Uploads with Presets matching Screen #58 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Logo Field */}
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold text-slate-300">
+              Hackathon Logo
             </label>
-            <div className="flex flex-wrap gap-2 mb-3">
-              {THEME_PRESETS.map((preset) => {
-                const isSelected = formData.theme === preset;
-                return (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => onChange({ theme: preset })}
-                    className={`text-xs px-3.5 py-1.5 rounded-full border transition-all ${
-                      isSelected
-                        ? "bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-sm shadow-cyan-500/20"
-                        : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
-                    }`}
-                  >
-                    {preset}
-                  </button>
-                );
-              })}
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0 shadow-md">
+                {formData.logo_url ? (
+                  <img src={formData.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                ) : (
+                  <Building2 className="w-6 h-6 text-slate-500" />
+                )}
+              </div>
+              <input
+                type="text"
+                value={formData.logo_url || ""}
+                onChange={(e) => onChange({ logo_url: e.target.value })}
+                placeholder="Upload logo or paste image URL (Max 2MB)"
+                className="flex-1 bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-primary-500"
+              />
             </div>
-            <input
-              type="text"
-              value={formData.theme || ""}
-              onChange={(e) => onChange({ theme: e.target.value })}
-              placeholder="Or enter a custom theme..."
-              className="w-full bg-slate-950/70 border border-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 text-xs transition-all"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Section 2: Format & Participation Rules */}
-      <div className="bg-slate-900/50 border border-slate-800/80 rounded-3xl p-6 sm:p-8 backdrop-blur-md space-y-6">
-        <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-          <div className="w-9 h-9 rounded-xl bg-violet-500/10 border border-violet-500/30 flex items-center justify-center text-violet-400">
-            <Layers className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-white tracking-wide">
-              Format Mode & Squad Constraints
-            </h2>
-            <p className="text-xs text-slate-400">
-              Configure attendance model, team member counts, and public listing visibility.
-            </p>
-          </div>
-        </div>
-
-        {/* Mode Selector */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-3">
-            Event Format Mode
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              {
-                mode: "online",
-                label: "Virtual / Online",
-                desc: "Remote collaboration with Discord/Slack channels and digital submissions.",
-                icon: Globe,
-              },
-              {
-                mode: "in_person",
-                label: "In-Person Onsite",
-                desc: "Physical venue event with hardware desks, workshops, and live pitching.",
-                icon: MapPin,
-              },
-              {
-                mode: "hybrid",
-                label: "Hybrid Experience",
-                desc: "Simultaneous onsite hacking and global live-streamed online participants.",
-                icon: Laptop,
-              },
-            ].map((item) => {
-              const Icon = item.icon;
-              const isSelected = formData.mode === item.mode;
-              return (
+            {/* Quick Logo Presets */}
+            <div className="flex items-center gap-2 pt-1 text-[10px] text-slate-400">
+              <span>Presets:</span>
+              {LOGO_PRESETS.map((p) => (
                 <button
-                  key={item.mode}
+                  key={p.name}
                   type="button"
-                  onClick={() => onChange({ mode: item.mode })}
-                  className={`p-4 rounded-2xl border text-left transition-all ${
-                    isSelected
-                      ? "bg-cyan-500/10 border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.12)] ring-1 ring-cyan-500/30"
-                      : "bg-slate-950/40 border-slate-800/80 hover:border-slate-700"
-                  }`}
+                  onClick={() => onChange({ logo_url: p.url })}
+                  className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
                 >
-                  <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2.5 ${
-                      isSelected ? "bg-cyan-500/20 text-cyan-400" : "bg-slate-800 text-slate-400"
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <p className={`text-sm font-semibold ${isSelected ? "text-white" : "text-slate-300"}`}>
-                    {item.label}
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                    {item.desc}
-                  </p>
+                  {p.name}
                 </button>
-              );
-            })}
+              ))}
+            </div>
+          </div>
+
+          {/* Cover Image Field */}
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold text-slate-300">
+              Hackathon Cover Image
+            </label>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0 shadow-md">
+                {formData.banner_url ? (
+                  <img src={formData.banner_url} alt="Cover" className="w-full h-full object-cover" />
+                ) : (
+                  <Upload className="w-6 h-6 text-slate-500" />
+                )}
+              </div>
+              <input
+                type="text"
+                value={formData.banner_url || ""}
+                onChange={(e) => onChange({ banner_url: e.target.value })}
+                placeholder="Upload image URL (Recommended: 1200x600px)"
+                className="flex-1 bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-primary-500"
+              />
+            </div>
+            {/* Quick Cover Presets */}
+            <div className="flex items-center gap-2 pt-1 text-[10px] text-slate-400">
+              <span>Presets:</span>
+              {BANNER_PRESETS.map((p) => (
+                <button
+                  key={p.name}
+                  type="button"
+                  onClick={() => onChange({ banner_url: p.url })}
+                  className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+                >
+                  {p.name}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Team Size Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Organization & Website matching Screen #58 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-2">
-              <Users className="w-3.5 h-3.5 text-cyan-400" />
-              Minimum Squad Size
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              Organization
             </label>
-            <input
-              type="number"
-              min={1}
-              max={formData.max_team_size || 8}
-              value={formData.min_team_size || 1}
-              onChange={(e) => onChange({ min_team_size: Math.max(1, parseInt(e.target.value) || 1) })}
-              className="w-full bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl px-4 py-2.5 text-white text-sm"
-            />
-            <p className="text-[11px] text-slate-500 mt-1">
-              Minimum allowable developers per registered team.
-            </p>
+            <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-900/60 border border-slate-700/80 text-xs text-white font-semibold">
+              <Building2 className="w-4 h-4 text-primary-400" />
+              <span>TechNova Labs</span>
+              <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-emerald-400 font-bold">
+                <CheckCircle2 className="w-3 h-3" />
+                <span>Verified</span>
+              </span>
+            </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-2">
-              <Users className="w-3.5 h-3.5 text-cyan-400" />
-              Maximum Squad Size
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              Organizational Website
             </label>
-            <input
-              type="number"
-              min={formData.min_team_size || 1}
-              max={12}
-              value={formData.max_team_size || 4}
-              onChange={(e) => onChange({ max_team_size: Math.max(formData.min_team_size || 1, parseInt(e.target.value) || 4) })}
-              className="w-full bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl px-4 py-2.5 text-white text-sm"
-            />
-            <p className="text-[11px] text-slate-500 mt-1">
-              Cap on team members per submission (standard is 4).
-            </p>
+            <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-900/60 border border-slate-700/80 text-xs text-slate-300">
+              <Globe className="w-4 h-4 text-slate-400" />
+              <span className="font-mono text-[11px]">https://technovalabs.com</span>
+            </div>
           </div>
         </div>
 
-        {/* Visibility */}
+        {/* Hackathon Type Selection matching Screen #58 */}
         <div>
-          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-2">
-            <Eye className="w-3.5 h-3.5 text-emerald-400" />
-            Tournament Visibility
+          <label className="block text-xs font-semibold text-slate-300 mb-2">
+            Hackathon Type <span className="text-rose-400">*</span>
           </label>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { val: "public", label: "Public Listing", note: "Featured on Explore" },
-              { val: "unlisted", label: "Unlisted (Link Only)", note: "Accessible via direct URL" },
-              { val: "private", label: "Private Enterprise", note: "Invite only" },
-            ].map((v) => (
-              <button
-                key={v.val}
-                type="button"
-                onClick={() => onChange({ visibility: v.val })}
-                className={`p-3 rounded-xl border text-left transition-all ${
-                  formData.visibility === v.val
-                    ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-300"
-                    : "bg-slate-950/40 border-slate-800 text-slate-400 hover:border-slate-700"
-                }`}
-              >
-                <p className="text-xs font-bold">{v.label}</p>
-                <p className="text-[10px] opacity-75">{v.note}</p>
-              </button>
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            {/* Card 1: Online */}
+            <button
+              type="button"
+              onClick={() => onChange({ mode: "online" })}
+              className={`p-4 rounded-2xl border text-left transition flex flex-col justify-between gap-3 ${
+                formData.mode === "online"
+                  ? "bg-primary-500/10 border-primary-500/60 ring-1 ring-primary-500/40 shadow-lg"
+                  : "bg-slate-900/80 border-slate-800 hover:border-slate-700"
+              }`}
+            >
+              <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center">
+                <Laptop className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-sm font-bold text-white">Online</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">Fully virtual event</div>
+              </div>
+            </button>
+
+            {/* Card 2: In-person event */}
+            <button
+              type="button"
+              onClick={() => onChange({ mode: "in_person" })}
+              className={`p-4 rounded-2xl border text-left transition flex flex-col justify-between gap-3 ${
+                formData.mode === "in_person"
+                  ? "bg-primary-500/10 border-primary-500/60 ring-1 ring-primary-500/40 shadow-lg"
+                  : "bg-slate-900/80 border-slate-800 hover:border-slate-700"
+              }`}
+            >
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
+                <MapPin className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-sm font-bold text-white">In-person event</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">Physical venue</div>
+              </div>
+            </button>
+
+            {/* Card 3: Hybrid */}
+            <button
+              type="button"
+              onClick={() => onChange({ mode: "hybrid" })}
+              className={`p-4 rounded-2xl border text-left transition flex flex-col justify-between gap-3 ${
+                formData.mode === "hybrid"
+                  ? "bg-primary-500/10 border-primary-500/60 ring-1 ring-primary-500/40 shadow-lg"
+                  : "bg-slate-900/80 border-slate-800 hover:border-slate-700"
+              }`}
+            >
+              <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center">
+                <Globe className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-sm font-bold text-white">Hybrid</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">Both online & offline</div>
+              </div>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Navigation Footer */}
-      <div className="flex items-center justify-between pt-4">
-        <div className="text-xs text-slate-400">
-          Step 1 of 4 • General details
-        </div>
+      {/* Bottom Action Controls matching Screen #58 */}
+      <div className="pt-6 border-t border-slate-800 flex items-center justify-between">
         <button
-          type="submit"
-          disabled={!isTitleValid}
-          className={`px-8 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
-            isTitleValid
-              ? "bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/25 cursor-pointer hover:scale-[1.02]"
-              : "bg-slate-800 text-slate-500 cursor-not-allowed"
-          }`}
+          type="button"
+          onClick={onSaveDraft}
+          disabled={isSaving}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition disabled:opacity-50"
         >
-          <span>Continue to Timelines</span>
-          <span>→</span>
+          <Save className="w-3.5 h-3.5" />
+          <span>Save as Draft</span>
         </button>
+
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            disabled
+            className="px-4 py-2.5 rounded-xl bg-slate-900 text-slate-600 text-xs font-semibold cursor-not-allowed border border-slate-800"
+          >
+            Back
+          </button>
+          <button
+            type="submit"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold shadow-lg shadow-primary-600/25 transition"
+          >
+            <span>Save & Next</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </form>
   );

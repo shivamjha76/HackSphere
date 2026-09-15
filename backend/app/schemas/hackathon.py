@@ -111,6 +111,8 @@ class HackathonCreatePayload(BaseModel):
     tagline: Optional[str] = None
     short_description: Optional[str] = None
     detailed_description: Optional[str] = None
+    banner_url: Optional[str] = None
+    logo_url: Optional[str] = None
     theme: Optional[str] = None
     mode: str = "online"  # "online" | "in_person" | "hybrid"
     status: str = "draft"  # "draft" | "published" | "live"
@@ -118,6 +120,7 @@ class HackathonCreatePayload(BaseModel):
     min_team_size: int = 1
     max_team_size: int = 4
     max_participants: Optional[int] = None
+    max_teams: Optional[int] = None
     prize_pool_summary: Optional[str] = None
     rules: Optional[str] = None
     eligibility: Optional[str] = None

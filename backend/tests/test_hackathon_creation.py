@@ -128,3 +128,43 @@ def test_create_hackathon_slug_deduplication():
     data2 = res2.json()
     assert data2["slug"] == f"{expected_base}-1"
 
+
+def test_create_hackathon_with_branding_and_activity_log():
+    """Verify Screen #58 logo, cover image, and activity log registration."""
+    headers = get_auth_header("organizer@technova.com", "OrganizerPass123!")
+    uid = uuid.uuid4().hex[:6]
+    payload = {
+        "title": f"AI Global Summit {uid}",
+        "tagline": "Autonomous Multi-Agent Systems Sprint",
+        "short_description": "Build next-generation production AI agents in 48 hours.",
+        "detailed_description": "Comprehensive guidelines, evaluation rubric, and API access.",
+        "banner_url": "https://images.unsplash.com/photo-1518770660439-4636190af475",
+        "logo_url": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe",
+        "theme": "AI/ML",
+        "mode": "hybrid",
+        "status": "draft",
+        "visibility": "public",
+        "min_team_size": 2,
+        "max_team_size": 4,
+        "prize_pool_summary": "₹50,000 INR + Swag Kits",
+    }
+    res = client.post("/api/v1/hackathons", json=payload, headers=headers)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["banner_url"] == payload["banner_url"]
+    assert data["logo_url"] == payload["logo_url"]
+    assert data["status"] == "draft"
+
+    # Verify ActivityLog entry was recorded
+    from app.db.session import SessionLocal
+    from app.models.organization import ActivityLog
+    db = SessionLocal()
+    log = db.query(ActivityLog).filter(
+        ActivityLog.action == "Created Hackathon",
+        ActivityLog.details.contains(payload["title"])
+    ).first()
+    assert log is not None
+    assert log.organization_id is not None
+    db.close()
+
+

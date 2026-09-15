@@ -225,6 +225,8 @@ export interface HackathonCreatePayload {
   tagline?: string | null;
   short_description?: string | null;
   detailed_description?: string | null;
+  banner_url?: string | null;
+  logo_url?: string | null;
   theme?: string | null;
   mode?: string;
   status?: string;
@@ -232,6 +234,7 @@ export interface HackathonCreatePayload {
   min_team_size?: number;
   max_team_size?: number;
   max_participants?: number | null;
+  max_teams?: number | null;
   prize_pool_summary?: string | null;
   rules?: string | null;
   eligibility?: string | null;

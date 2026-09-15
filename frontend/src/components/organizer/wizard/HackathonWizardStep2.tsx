@@ -1,7 +1,16 @@
 "use client";
 
-import React from "react";
-import { Calendar, Clock, Sparkles, AlertCircle, ArrowLeft } from "lucide-react";
+import React, { useState } from "react";
+import {
+  Calendar,
+  Clock,
+  Globe2,
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  Save,
+  CheckCircle2,
+} from "lucide-react";
 import { HackathonCreatePayload } from "@/lib/api";
 
 interface HackathonWizardStep2Props {
@@ -9,247 +18,248 @@ interface HackathonWizardStep2Props {
   onChange: (fields: Partial<HackathonCreatePayload>) => void;
   onNext: () => void;
   onBack: () => void;
+  onSaveDraft: () => void;
+  isSaving?: boolean;
 }
+
+const TIMEZONES = [
+  { label: "India Standard Time (IST, UTC+5:30)", value: "Asia/Kolkata" },
+  { label: "Coordinated Universal Time (UTC+0:00)", value: "UTC" },
+  { label: "Eastern Standard Time (EST, UTC-5:00)", value: "America/New_York" },
+  { label: "Pacific Standard Time (PST, UTC-8:00)", value: "America/Los_Angeles" },
+  { label: "Central European Time (CET, UTC+1:00)", value: "Europe/Paris" },
+];
 
 export const HackathonWizardStep2: React.FC<HackathonWizardStep2Props> = ({
   formData,
   onChange,
   onNext,
   onBack,
+  onSaveDraft,
+  isSaving = false,
 }) => {
-  // Pre-fill helper for convenience
-  const handlePreFillSampleDates = (type: "48h" | "1w") => {
-    const now = new Date();
-    const regStart = new Date(now.getTime() + 1 * 86400000); // tomorrow
-    const regEnd = new Date(now.getTime() + (type === "48h" ? 4 : 8) * 86400000);
-    const eventStart = new Date(regEnd.getTime() + 1 * 3600000);
-    const submissionStart = eventStart;
-    const submissionEnd = new Date(
-      eventStart.getTime() + (type === "48h" ? 48 * 3600000 : 7 * 86400000)
-    );
-    const eventEnd = submissionEnd;
-    const judgingStart = new Date(submissionEnd.getTime() + 2 * 3600000);
-    const judgingEnd = new Date(judgingStart.getTime() + 2 * 86400000);
-    const resultDate = new Date(judgingEnd.getTime() + 1 * 86400000);
-
-    const toInputVal = (d: Date) => d.toISOString().slice(0, 16);
-
-    onChange({
-      registration_start: toInputVal(regStart),
-      registration_end: toInputVal(regEnd),
-      event_start: toInputVal(eventStart),
-      event_end: toInputVal(eventEnd),
-      submission_start: toInputVal(submissionStart),
-      submission_end: toInputVal(submissionEnd),
-      judging_start: toInputVal(judgingStart),
-      judging_end: toInputVal(judgingEnd),
-      result_date: toInputVal(resultDate),
-    });
-  };
+  const [selectedTz, setSelectedTz] = useState("Asia/Kolkata");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onNext();
   };
 
-  const toDateVal = (val?: string | null) => {
-    if (!val) return "";
-    return val.length > 16 ? val.slice(0, 16) : val;
+  const toInputDate = (d?: string | Date | null) => {
+    if (!d) return "";
+    try {
+      const date = new Date(d);
+      return date.toISOString().slice(0, 16);
+    } catch {
+      return "";
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 animate-fadeIn">
-      {/* Quick preset banner */}
-      <div className="bg-gradient-to-r from-blue-900/30 via-slate-900/40 to-cyan-900/30 border border-blue-500/30 rounded-3xl p-6 backdrop-blur-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <form onSubmit={handleSubmit} className="space-y-6 animate-in fade-in duration-200">
+      {/* Step Header */}
+      <div className="pb-4 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-cyan-400" />
-            <span className="text-sm font-bold text-white">Smart Schedule Automation</span>
-          </div>
+          <h2 className="text-xl font-bold text-white tracking-tight">Event Timeline</h2>
           <p className="text-xs text-slate-400 mt-1">
-            Generate standard timeline milestones automatically or configure each date manually.
+            Set key dates and milestone schedule for your event.
           </p>
         </div>
-        <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={() => handlePreFillSampleDates("48h")}
-            className="px-3.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-semibold transition-all cursor-pointer"
+
+        {/* Timezone Selector */}
+        <div className="flex items-center gap-2">
+          <Globe2 className="w-3.5 h-3.5 text-slate-400" />
+          <select
+            value={selectedTz}
+            onChange={(e) => setSelectedTz(e.target.value)}
+            className="bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 text-xs text-slate-200 font-medium focus:outline-hidden focus:border-primary-500"
           >
-            48-Hour Weekend Sprint
-          </button>
-          <button
-            type="button"
-            onClick={() => handlePreFillSampleDates("1w")}
-            className="px-3.5 py-1.5 rounded-xl bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/40 text-violet-300 text-xs font-semibold transition-all cursor-pointer"
-          >
-            7-Day Global Hackathon
-          </button>
+            {TIMEZONES.map((tz) => (
+              <option key={tz.value} value={tz.value}>
+                {tz.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
-      {/* Milestone Blocks */}
-      <div className="bg-slate-900/50 border border-slate-800/80 rounded-3xl p-6 sm:p-8 backdrop-blur-md space-y-6">
-        <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-          <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-            <Calendar className="w-5 h-5" />
+      {/* Timeline Form Fields */}
+      <div className="space-y-6">
+        {/* 1. Registration Window */}
+        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider">
+            <Calendar className="w-4 h-4 text-blue-400" />
+            <span>1. Registration Period</span>
           </div>
-          <div>
-            <h2 className="text-lg font-bold text-white tracking-wide">
-              Tournament Milestones & Timeline
-            </h2>
-            <p className="text-xs text-slate-400">
-              Control when registrations open, when hacking commences, and when winners are announced.
-            </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Registration Opens
+              </label>
+              <input
+                type="datetime-local"
+                value={toInputDate(formData.registration_start)}
+                onChange={(e) => onChange({ registration_start: e.target.value as any })}
+                className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-hidden focus:border-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Registration Closes
+              </label>
+              <input
+                type="datetime-local"
+                value={toInputDate(formData.registration_end)}
+                onChange={(e) => onChange({ registration_end: e.target.value as any })}
+                className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-hidden focus:border-primary-500"
+              />
+            </div>
           </div>
         </div>
 
-        <div className="space-y-6">
-          {/* Milestone 1: Registration Window */}
-          <div className="bg-slate-950/50 p-5 rounded-2xl border border-slate-800 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50" />
-                <h3 className="text-sm font-bold text-white">Registration Window</h3>
-              </div>
-              <span className="text-[11px] text-slate-500">Milestone 1</span>
+        {/* 2. Hackathon Sprint Period */}
+        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider">
+            <Clock className="w-4 h-4 text-emerald-400" />
+            <span>2. Hacking & Sprint Window</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Hacking Begins
+              </label>
+              <input
+                type="datetime-local"
+                value={toInputDate(formData.event_start)}
+                onChange={(e) => onChange({ event_start: e.target.value as any })}
+                className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-hidden focus:border-primary-500"
+              />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                  Registration Opens
-                </label>
-                <input
-                  type="datetime-local"
-                  value={toDateVal(formData.registration_start)}
-                  onChange={(e) => onChange({ registration_start: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 focus:border-cyan-500 rounded-xl px-3.5 py-2 text-white text-xs"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                  Registration Closes
-                </label>
-                <input
-                  type="datetime-local"
-                  value={toDateVal(formData.registration_end)}
-                  onChange={(e) => onChange({ registration_end: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 focus:border-cyan-500 rounded-xl px-3.5 py-2 text-white text-xs"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Hacking Ends
+              </label>
+              <input
+                type="datetime-local"
+                value={toInputDate(formData.event_end)}
+                onChange={(e) => onChange({ event_end: e.target.value as any })}
+                className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-hidden focus:border-primary-500"
+              />
             </div>
           </div>
+        </div>
 
-          {/* Milestone 2: Hacking & Submissions */}
-          <div className="bg-slate-950/50 p-5 rounded-2xl border border-slate-800 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/50" />
-                <h3 className="text-sm font-bold text-white">Project Build & Submission Period</h3>
-              </div>
-              <span className="text-[11px] text-slate-500">Milestone 2</span>
+        {/* 3. Submissions Deadline with lock notice */}
+        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider">
+              <CheckCircle2 className="w-4 h-4 text-cyan-400" />
+              <span>3. Project Submissions Deadline</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                  Submission Portal Opens (Event Start)
-                </label>
-                <input
-                  type="datetime-local"
-                  value={toDateVal(formData.submission_start || formData.event_start)}
-                  onChange={(e) =>
-                    onChange({
-                      submission_start: e.target.value,
-                      event_start: e.target.value,
-                    })
-                  }
-                  className="w-full bg-slate-900 border border-slate-800 focus:border-cyan-500 rounded-xl px-3.5 py-2 text-white text-xs"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                  Hard Code Freeze (Submission Deadline)
-                </label>
-                <input
-                  type="datetime-local"
-                  value={toDateVal(formData.submission_end || formData.event_end)}
-                  onChange={(e) =>
-                    onChange({
-                      submission_end: e.target.value,
-                      event_end: e.target.value,
-                    })
-                  }
-                  className="w-full bg-slate-900 border border-slate-800 focus:border-cyan-500 rounded-xl px-3.5 py-2 text-white text-xs"
-                />
-              </div>
+            <span className="text-[10px] text-amber-400 font-semibold inline-flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              <span>Auto-freeze enforced</span>
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Submission Window Opens
+              </label>
+              <input
+                type="datetime-local"
+                value={toInputDate(formData.submission_start)}
+                onChange={(e) => onChange({ submission_start: e.target.value as any })}
+                className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-hidden focus:border-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Hard Submission Deadline
+              </label>
+              <input
+                type="datetime-local"
+                value={toInputDate(formData.submission_end)}
+                onChange={(e) => onChange({ submission_end: e.target.value as any })}
+                className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-hidden focus:border-primary-500"
+              />
             </div>
           </div>
+        </div>
 
-          {/* Milestone 3: Judging & Results */}
-          <div className="bg-slate-950/50 p-5 rounded-2xl border border-slate-800 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-violet-400 shadow-sm shadow-violet-400/50" />
-                <h3 className="text-sm font-bold text-white">Judging Evaluation & Winners Announcement</h3>
-              </div>
-              <span className="text-[11px] text-slate-500">Milestone 3</span>
+        {/* 4. Judging Window & Results */}
+        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider">
+            <Calendar className="w-4 h-4 text-purple-400" />
+            <span>4. Evaluation & Results Announcement</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Judging Begins
+              </label>
+              <input
+                type="datetime-local"
+                value={toInputDate(formData.judging_start)}
+                onChange={(e) => onChange({ judging_start: e.target.value as any })}
+                className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-hidden focus:border-primary-500"
+              />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                  Judging Opens
-                </label>
-                <input
-                  type="datetime-local"
-                  value={toDateVal(formData.judging_start)}
-                  onChange={(e) => onChange({ judging_start: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 focus:border-cyan-500 rounded-xl px-3.5 py-2 text-white text-xs"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                  Judging Concludes
-                </label>
-                <input
-                  type="datetime-local"
-                  value={toDateVal(formData.judging_end)}
-                  onChange={(e) => onChange({ judging_end: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 focus:border-cyan-500 rounded-xl px-3.5 py-2 text-white text-xs"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                  Results Gala / Announcement
-                </label>
-                <input
-                  type="datetime-local"
-                  value={toDateVal(formData.result_date)}
-                  onChange={(e) => onChange({ result_date: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 focus:border-cyan-500 rounded-xl px-3.5 py-2 text-white text-xs"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Judging Closes
+              </label>
+              <input
+                type="datetime-local"
+                value={toInputDate(formData.judging_end)}
+                onChange={(e) => onChange({ judging_end: e.target.value as any })}
+                className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-hidden focus:border-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Winners Announced
+              </label>
+              <input
+                type="datetime-local"
+                value={toInputDate(formData.result_date)}
+                onChange={(e) => onChange({ result_date: e.target.value as any })}
+                className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-hidden focus:border-primary-500"
+              />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Navigation Footer */}
-      <div className="flex items-center justify-between pt-4">
+      {/* Bottom Action Controls */}
+      <div className="pt-6 border-t border-slate-800 flex items-center justify-between">
         <button
           type="button"
-          onClick={onBack}
-          className="px-6 py-3 rounded-xl border border-slate-700 hover:border-slate-500 text-slate-300 font-semibold text-sm transition-all flex items-center gap-2 cursor-pointer"
+          onClick={onSaveDraft}
+          disabled={isSaving}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition disabled:opacity-50"
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back</span>
+          <Save className="w-3.5 h-3.5" />
+          <span>Save as Draft</span>
         </button>
-        <button
-          type="submit"
-          className="px-8 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/25 cursor-pointer hover:scale-[1.02] flex items-center gap-2"
-        >
-          <span>Continue to Rubric & Prizes</span>
-          <span>→</span>
-        </button>
+
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back</span>
+          </button>
+          <button
+            type="submit"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold shadow-lg shadow-primary-600/25 transition"
+          >
+            <span>Save & Next</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </form>
   );

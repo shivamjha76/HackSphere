@@ -194,6 +194,8 @@ def create_hackathon(
         tagline=payload.tagline,
         short_description=payload.short_description,
         detailed_description=payload.detailed_description,
+        banner_url=payload.banner_url,
+        logo_url=payload.logo_url,
         theme=payload.theme,
         mode=payload.mode,
         status=payload.status,
@@ -201,6 +203,7 @@ def create_hackathon(
         min_team_size=payload.min_team_size,
         max_team_size=payload.max_team_size,
         max_participants=payload.max_participants,
+        max_teams=payload.max_teams,
         prize_pool_summary=payload.prize_pool_summary,
         rules=payload.rules,
         eligibility=payload.eligibility,
@@ -217,6 +220,19 @@ def create_hackathon(
     )
     db.add(hackathon)
     db.flush()
+
+    # Log Activity
+    from app.models.organization import ActivityLog
+    db.add(
+        ActivityLog(
+            organization_id=org.id,
+            user_id=current_user.id,
+            user_name=current_user.full_name,
+            action="Created Hackathon",
+            details=f"Created hackathon '{hackathon.title}' with status '{hackathon.status}' and mode '{hackathon.mode}'",
+            ip_address="127.0.0.1",
+        )
+    )
 
     # 4. Insert Evaluation Criteria if supplied
     if payload.criteria:
