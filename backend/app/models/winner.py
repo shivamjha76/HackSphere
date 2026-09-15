@@ -38,6 +38,11 @@ class HackathonWinner(Base, TimestampMixin):
     # Optional jury citation or reason
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
+    # Disbursement tracking per UI Screen #57
+    disbursement_status: Mapped[str] = mapped_column(String(50), default="pending", nullable=False)
+    transaction_reference: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    disbursed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
     # Whether published publicly
     is_published: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     announced_at: Mapped[datetime] = mapped_column(

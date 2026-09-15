@@ -1873,6 +1873,128 @@ export const organizerTeamsApi = {
   },
 };
 
+// ==========================================
+// ORGANIZER PRIZE DISTRIBUTION & PODIUM (SCREEN #57)
+// ==========================================
+
+export interface PrizeTierItemOut {
+  id: number;
+  rank: number;
+  place_title: string;
+  amount_summary: string;
+  amount_in_words?: string | null;
+  prize_type: string;
+  team_quantity: number;
+  assigned_team_id?: number | null;
+  assigned_team_name?: string | null;
+  assigned_team_track?: string | null;
+  team_members_count: number;
+  team_members_names: string[];
+  disbursement_status: "disbursed" | "pending" | "ready" | string;
+  transaction_reference?: string | null;
+  disbursed_at?: string | null;
+  notes?: string | null;
+}
+
+export interface PrizePoolSummaryOut {
+  total_prize_pool: string;
+  total_cash_amount: number;
+  currency_symbol: string;
+  total_winners_count: number;
+  first_place: string;
+  second_place: string;
+  third_place: string;
+  special_mentions: string;
+  prizes: PrizeTierItemOut[];
+}
+
+export interface EligibleTeamRef {
+  id: number;
+  name: string;
+  track?: string | null;
+  members_count: number;
+}
+
+export interface OrganizerWinnersPrizesOverviewOut {
+  hackathon_id: number;
+  hackathon_title: string;
+  hackathon_slug: string;
+  status: string;
+  managed_hackathons: ManagedHackathonRef[];
+  summary: PrizePoolSummaryOut;
+  available_teams: EligibleTeamRef[];
+}
+
+export interface UpdatePrizeTierIn {
+  place_title?: string;
+  amount_summary?: string;
+  amount_in_words?: string;
+  prize_type?: string;
+  team_quantity?: number;
+  assigned_team_id?: number;
+  notes?: string;
+}
+
+export interface DisbursePrizeIn {
+  transaction_reference: string;
+  notes?: string;
+}
+
+export interface CreatePrizeTierIn {
+  place_title: string;
+  amount_summary: string;
+  amount_in_words?: string;
+  prize_type?: string;
+  team_quantity?: number;
+  assigned_team_id?: number;
+  notes?: string;
+}
+
+export const organizerPrizesApi = {
+  getPrizesOverview: async (params?: {
+    hackathon_id?: number;
+    search?: string;
+  }): Promise<OrganizerWinnersPrizesOverviewOut> => {
+    const query = new URLSearchParams();
+    if (params?.hackathon_id) query.set("hackathon_id", params.hackathon_id.toString());
+    if (params?.search) query.set("search", params.search);
+
+    const queryString = query.toString();
+    const endpoint = queryString ? `/organizer/winners/prizes?${queryString}` : "/organizer/winners/prizes";
+    return apiFetch<OrganizerWinnersPrizesOverviewOut>(endpoint);
+  },
+
+  updatePrizeTier: async (
+    prizeId: number,
+    payload: UpdatePrizeTierIn
+  ): Promise<PrizeTierItemOut> => {
+    return apiFetch<PrizeTierItemOut>(`/organizer/winners/prizes/${prizeId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  disbursePrize: async (
+    prizeId: number,
+    payload: DisbursePrizeIn
+  ): Promise<PrizeTierItemOut> => {
+    return apiFetch<PrizeTierItemOut>(`/organizer/winners/prizes/${prizeId}/disburse`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  createPrizeTier: async (
+    hackathonId: number,
+    payload: CreatePrizeTierIn
+  ): Promise<PrizeTierItemOut> => {
+    return apiFetch<PrizeTierItemOut>(`/organizer/winners/prizes/tiers?hackathon_id=${hackathonId}`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+};
+
 
 
 

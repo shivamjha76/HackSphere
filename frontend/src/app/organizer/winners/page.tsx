@@ -49,6 +49,17 @@ export default function GlobalOrganizerWinnersPage() {
   // Tab State
   const [activeTab, setActiveTab] = useState<"podium" | "prizes" | "certificates">("podium");
 
+  // Read ?tab= query param if present
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      if (tabParam === "prizes" || tabParam === "certificates" || tabParam === "podium") {
+        setActiveTab(tabParam as any);
+      }
+    }
+  }, []);
+
   // Data State
   const [overview, setOverview] = useState<WinnersDashboardOverviewOut | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntryOut[]>([]);
@@ -459,10 +470,10 @@ export default function GlobalOrganizerWinnersPage() {
           )}
 
           {/* TAB 2: PRIZE DISTRIBUTION (SCREEN #57) */}
-          {!loading && activeTab === "prizes" && overview && (
+          {activeTab === "prizes" && (
             <PrizeDistributionTab
-              prizesOverview={overview.prizes_overview}
-              winners={overview.winners}
+              hackathonId={overview?.hackathon_id}
+              hackathonSlug={selectedSlug}
               hackathonTitle={currentHackathonTitle}
             />
           )}

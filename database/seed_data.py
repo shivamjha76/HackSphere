@@ -55,6 +55,18 @@ def ensure_sqlite_columns(eng):
             for col_name, col_type in columns_to_add:
                 if col_name not in existing_cols:
                     conn.execute(text(f"ALTER TABLE organizations ADD COLUMN {col_name} {col_type}"))
+
+            res_winners = conn.execute(text("PRAGMA table_info(hackathon_winners)"))
+            existing_winner_cols = {row[1] for row in res_winners.fetchall()}
+            winner_cols_to_add = [
+                ("disbursement_status", "VARCHAR(50) DEFAULT 'pending'"),
+                ("transaction_reference", "VARCHAR(100)"),
+                ("disbursed_at", "DATETIME"),
+            ]
+            for col_name, col_type in winner_cols_to_add:
+                if col_name not in existing_winner_cols:
+                    conn.execute(text(f"ALTER TABLE hackathon_winners ADD COLUMN {col_name} {col_type}"))
+
             conn.commit()
     except Exception as e:
         print(f"[!] Migration notice: {e}")
@@ -948,18 +960,39 @@ def seed_database():
                 "team_id": team_codecrafters.id,
                 "submission_id": sub.id,
                 "rank": 1,
-                "title": "1st Place Winner",
+                "title": "1st Place",
                 "prize_amount": "₹25,000",
                 "prize_type": "cash",
-                "notes": "Outstanding agentic architecture and autonomous tool integration.",
+                "notes": "Twenty Five Thousand Rupees Only",
+                "disbursement_status": "disbursed",
+                "transaction_reference": "TXN-HS-2026-9841",
             },
             {
                 "team_id": team_bytebuilders.id,
                 "rank": 2,
-                "title": "1st Runner Up",
+                "title": "2nd Place",
                 "prize_amount": "₹15,000",
                 "prize_type": "cash",
-                "notes": "Excellent multimodal UI and edge computing optimization.",
+                "notes": "Fifteen Thousand Rupees Only",
+                "disbursement_status": "ready",
+            },
+            {
+                "team_id": team_devdynamos.id,
+                "rank": 3,
+                "title": "3rd Place",
+                "prize_amount": "₹10,000",
+                "prize_type": "cash",
+                "notes": "Ten Thousand Rupees Only",
+                "disbursement_status": "pending",
+            },
+            {
+                "team_id": team_pixel.id,
+                "rank": 4,
+                "title": "Special Mentions",
+                "prize_amount": "Goodies & Swag",
+                "prize_type": "goodies",
+                "notes": "Exclusive goodies, swag kits and certificates",
+                "disbursement_status": "ready",
             },
         ]
 
