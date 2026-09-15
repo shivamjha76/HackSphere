@@ -48,11 +48,11 @@ def test_judge_dashboard_rohan_mehta_success():
 
     assert "submissions_queue" in data
     assert len(data["submissions_queue"]) >= 1
-    q0 = data["submissions_queue"][0]
-    assert "CodeCrafters" in q0["team_name"]
-    assert q0["project_title"] == "SmartAssist AI"
-    assert q0["evaluation_status"] == "completed"
-    assert q0["total_score"] is not None
+    cc_item = next((q for q in data["submissions_queue"] if "CodeCrafters" in q["team_name"]), None)
+    assert cc_item is not None
+    assert cc_item["project_title"] == "SmartAssist AI"
+    assert cc_item["evaluation_status"] == "completed"
+    assert cc_item["total_score"] is not None
 
 
 def test_judge_submissions_queue_filter_status():

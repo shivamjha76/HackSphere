@@ -16,6 +16,7 @@ from app.api.v1.endpoints import (
     reports,
     team_members,
     organization_settings,
+    organizer_teams,
 )
 
 api_router = APIRouter()
@@ -30,6 +31,7 @@ api_router.include_router(organization_settings.router, prefix="/organizations",
 api_router.include_router(organizations.router, prefix="/organizations", tags=["Organizations"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
 api_router.include_router(teams.router, prefix="/teams", tags=["Teams"])
+api_router.include_router(organizer_teams.router, prefix="/organizer/teams", tags=["Organizer Teams & Cohort Directory"])
 api_router.include_router(submissions.router, prefix="/submissions", tags=["Submissions"])
 api_router.include_router(certificates.router, prefix="/certificates", tags=["Certificates"])
 api_router.include_router(judging.router, prefix="/judging", tags=["Judging & Evaluations"])

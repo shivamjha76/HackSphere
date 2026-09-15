@@ -1773,6 +1773,106 @@ export const orgSettingsApi = {
   },
 };
 
+// ==========================================
+// ORGANIZER TEAMS & COHORT DIRECTORY (SCREEN #56)
+// ==========================================
+
+export interface OrganizerTeamMemberItem {
+  id: number;
+  user_id: number;
+  full_name: string;
+  email: string;
+  avatar_url?: string | null;
+  role: string;
+}
+
+export interface OrganizerTeamItemOut {
+  id: number;
+  hackathon_id: number;
+  hackathon_title: string;
+  name: string;
+  invite_code: string;
+  track?: string | null;
+  status: "registered" | "shortlisted" | "disqualified" | string;
+  is_frozen: boolean;
+  project_title?: string | null;
+  project_tagline?: string | null;
+  project_description?: string | null;
+  submission_id?: number | null;
+  has_submission: boolean;
+  github_url?: string | null;
+  live_demo_url?: string | null;
+  members_count: number;
+  members: OrganizerTeamMemberItem[];
+  registered_at: string;
+}
+
+export interface ManagedHackathonRef {
+  id: number;
+  title: string;
+  slug: string;
+  status: string;
+  teams_count: number;
+}
+
+export interface OrganizerTeamsOverviewOut {
+  hackathon_id: number;
+  hackathon_title: string;
+  managed_hackathons: ManagedHackathonRef[];
+  total_teams: number;
+  registered_count: number;
+  shortlisted_count: number;
+  disqualified_count: number;
+  teams: OrganizerTeamItemOut[];
+}
+
+export interface UpdateTeamStatusIn {
+  status: "registered" | "shortlisted" | "disqualified" | string;
+  reason?: string;
+}
+
+export interface BulkUpdateTeamStatusIn {
+  team_ids: number[];
+  status: "registered" | "shortlisted" | "disqualified" | string;
+  reason?: string;
+}
+
+export const organizerTeamsApi = {
+  getOverview: async (params?: {
+    hackathon_id?: number;
+    status?: string;
+    search?: string;
+  }): Promise<OrganizerTeamsOverviewOut> => {
+    const query = new URLSearchParams();
+    if (params?.hackathon_id) query.set("hackathon_id", params.hackathon_id.toString());
+    if (params?.status && params.status !== "all") query.set("status", params.status);
+    if (params?.search) query.set("search", params.search);
+
+    const queryString = query.toString();
+    const endpoint = queryString ? `/organizer/teams?${queryString}` : "/organizer/teams";
+    return apiFetch<OrganizerTeamsOverviewOut>(endpoint);
+  },
+
+  updateStatus: async (
+    teamId: number,
+    payload: UpdateTeamStatusIn
+  ): Promise<OrganizerTeamItemOut> => {
+    return apiFetch<OrganizerTeamItemOut>(`/organizer/teams/${teamId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  bulkUpdateStatus: async (
+    payload: BulkUpdateTeamStatusIn
+  ): Promise<{ success: boolean; updated_count: number; status: string; team_ids: number[] }> => {
+    return apiFetch("/organizer/teams/bulk-status", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+};
+
 
 
 

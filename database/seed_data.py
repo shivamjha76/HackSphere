@@ -605,7 +605,76 @@ def seed_database():
             m4 = TeamMember(team_id=team_bytebuilders.id, user_id=users["aman@example.com"].id, role="leader")
             db.add(m4)
             db.flush()
-        print("[+] Verified teams: CodeCrafters (3 members) & ByteBuilders.")
+
+        team_devdynamos = db.query(Team).filter_by(invite_code="DEV-DYNA-26").first()
+        if not team_devdynamos:
+            team_devdynamos = Team(
+                hackathon_id=ai_hack.id,
+                name="DevDynamos",
+                invite_code="DEV-DYNA-26",
+                track="Cybersecurity & Web3",
+                status="registered",
+                is_frozen=False,
+                created_by_user_id=users["rahul@example.com"].id,
+            )
+            db.add(team_devdynamos)
+            db.flush()
+            m5 = TeamMember(team_id=team_devdynamos.id, user_id=users["rahul@example.com"].id, role="leader")
+            db.add(m5)
+            db.flush()
+
+        team_pixel = db.query(Team).filter_by(invite_code="PIXEL-PIONEER-26").first()
+        if not team_pixel:
+            team_pixel = Team(
+                hackathon_id=ai_hack.id,
+                name="PixelPioneers",
+                invite_code="PIXEL-PIONEER-26",
+                track="Social & Gaming",
+                status="registered",
+                is_frozen=False,
+                created_by_user_id=users["shivam@example.com"].id,
+            )
+            db.add(team_pixel)
+            db.flush()
+            m6 = TeamMember(team_id=team_pixel.id, user_id=users["shivam@example.com"].id, role="leader")
+            db.add(m6)
+            db.flush()
+
+        team_logic = db.query(Team).filter_by(invite_code="LOGIC-LEGEND-26").first()
+        if not team_logic:
+            team_logic = Team(
+                hackathon_id=ai_hack.id,
+                name="LogicLegends",
+                invite_code="LOGIC-LEGEND-26",
+                track="AI & EdTech",
+                status="shortlisted",
+                is_frozen=False,
+                created_by_user_id=users["arjun@example.com"].id,
+            )
+            db.add(team_logic)
+            db.flush()
+            m7 = TeamMember(team_id=team_logic.id, user_id=users["arjun@example.com"].id, role="leader")
+            db.add(m7)
+            db.flush()
+
+        team_crypto = db.query(Team).filter_by(invite_code="CRYPTO-CODE-26").first()
+        if not team_crypto:
+            team_crypto = Team(
+                hackathon_id=ai_hack.id,
+                name="CryptoCoders",
+                invite_code="CRYPTO-CODE-26",
+                track="Blockchain & FinTech",
+                status="disqualified",
+                is_frozen=False,
+                created_by_user_id=users["priya@example.com"].id,
+            )
+            db.add(team_crypto)
+            db.flush()
+            m8 = TeamMember(team_id=team_crypto.id, user_id=users["priya@example.com"].id, role="leader")
+            db.add(m8)
+            db.flush()
+
+        print("[+] Verified teams: CodeCrafters, ByteBuilders, DevDynamos, PixelPioneers, LogicLegends, CryptoCoders.")
 
         # 8. Seed Submissions
         sub = db.query(Submission).filter_by(team_id=team_codecrafters.id).first()
@@ -614,7 +683,7 @@ def seed_database():
                 team_id=team_codecrafters.id,
                 hackathon_id=ai_hack.id,
                 project_title="SmartAssist AI",
-                tagline="Intelligent autonomous agent for workflow automation",
+                tagline="AI-powered assistant for smarter task management and productivity.",
                 description=(
                     "SmartAssist AI provides automated developer sprint planning, "
                     "context-aware code reviews, and predictive issue detection."
@@ -629,7 +698,81 @@ def seed_database():
             )
             db.add(sub)
             db.flush()
-        print("[+] Verified project submission for CodeCrafters (SmartAssist AI v1).")
+
+        # Seed ByteBuilders submission
+        sub_bb = db.query(Submission).filter_by(team_id=team_bytebuilders.id).first()
+        if not sub_bb:
+            sub_bb = Submission(
+                team_id=team_bytebuilders.id,
+                hackathon_id=ai_hack.id,
+                project_title="EcoTrack",
+                tagline="Track and reduce carbon footprint with smart analytics.",
+                description="EcoTrack monitors energy consumption and suggests algorithmic optimizations.",
+                github_url="https://github.com/bytebuilders/ecotrack",
+                live_demo_url="https://ecotrack.app",
+                version=1,
+                is_final=True,
+                is_locked=False,
+                status="submitted",
+            )
+            db.add(sub_bb)
+            db.flush()
+
+        # Seed DevDynamos submission
+        sub_dd = db.query(Submission).filter_by(team_id=team_devdynamos.id).first()
+        if not sub_dd:
+            sub_dd = Submission(
+                team_id=team_devdynamos.id,
+                hackathon_id=ai_hack.id,
+                project_title="SecureVerse",
+                tagline="Cybersecurity awareness and threat detection.",
+                description="SecureVerse detects vulnerabilities and zero-day vectors in smart contracts.",
+                github_url="https://github.com/devdynamos/secureverse",
+                version=1,
+                is_final=True,
+                is_locked=False,
+                status="submitted",
+            )
+            db.add(sub_dd)
+            db.flush()
+
+        # Seed PixelPioneers submission
+        sub_pp = db.query(Submission).filter_by(team_id=team_pixel.id).first()
+        if not sub_pp:
+            sub_pp = Submission(
+                team_id=team_pixel.id,
+                hackathon_id=ai_hack.id,
+                project_title="GameOn Hub",
+                tagline="A social platform for gamers to connect, compete and collaborate.",
+                description="GameOn Hub unites competitive esports clans and organizes community ladders.",
+                github_url="https://github.com/pixelpioneers/gameon-hub",
+                version=1,
+                is_final=True,
+                is_locked=False,
+                status="submitted",
+            )
+            db.add(sub_pp)
+            db.flush()
+
+        # Seed LogicLegends submission
+        sub_ll = db.query(Submission).filter_by(team_id=team_logic.id).first()
+        if not sub_ll:
+            sub_ll = Submission(
+                team_id=team_logic.id,
+                hackathon_id=ai_hack.id,
+                project_title="StudyBuddy AI",
+                tagline="AI tutor for personalized learning and doubt solving.",
+                description="StudyBuddy AI adapts curriculums to individual learning pacing and solves STEM equations.",
+                github_url="https://github.com/logiclegends/studybuddy-ai",
+                version=1,
+                is_final=True,
+                is_locked=False,
+                status="submitted",
+            )
+            db.add(sub_ll)
+            db.flush()
+
+        print("[+] Verified project submissions for Screen #56 showcase teams.")
 
         # 9. Seed Judge Assignment & Evaluation
         judge_user = users["rohan.mehta@judge.com"]
