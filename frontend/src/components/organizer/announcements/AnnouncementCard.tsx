@@ -78,10 +78,15 @@ export const AnnouncementCard: React.FC<AnnouncementCardProps> = ({
         );
       case "scheduled":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-500/15 text-sky-300 border border-sky-500/30">
-            <Clock className="w-3 h-3 text-sky-400" />
-            Scheduled
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+              <Clock className="w-3 h-3 text-cyan-400" />
+              Scheduled
+            </span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+              1 day left
+            </span>
+          </div>
         );
       case "draft":
         return (

@@ -960,7 +960,51 @@ export interface AnnouncementStats {
   scheduled_percentage: number;
 }
 
+export interface AnnouncementTemplateOut {
+  id: string;
+  name: string;
+  category: string;
+  title: string;
+  content_template: string;
+  priority: string;
+  target_audience: string;
+}
+
+export interface ChannelDeliveryStat {
+  channel: string;
+  delivered_count: number;
+  read_rate_percentage: number;
+  status: string;
+}
+
+export interface HourlyImpressionPoint {
+  hour_label: string;
+  impressions: number;
+}
+
+export interface AnnouncementAnalyticsOut {
+  hackathon_id: number;
+  hackathon_title: string;
+  total_broadcasts: number;
+  total_impressions: number;
+  unique_readers_estimate: number;
+  channel_delivery: ChannelDeliveryStat[];
+  hourly_impressions: HourlyImpressionPoint[];
+}
+
 export const announcementsApi = {
+  getTemplates: async (): Promise<AnnouncementTemplateOut[]> => {
+    return apiFetch<AnnouncementTemplateOut[]>("/announcements/templates", {
+      method: "GET",
+    });
+  },
+
+  getAnalytics: async (slugOrId: string): Promise<AnnouncementAnalyticsOut> => {
+    return apiFetch<AnnouncementAnalyticsOut>(`/announcements/hackathons/${slugOrId}/analytics`, {
+      method: "GET",
+    });
+  },
+
   getAnnouncements: async (
     slugOrId: string,
     params?: { status?: string; priority?: string; search?: string }

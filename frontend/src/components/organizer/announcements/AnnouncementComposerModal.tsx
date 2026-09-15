@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Announcement, AnnouncementCreateInput, AnnouncementUpdateInput } from "@/lib/api";
+import { Announcement, AnnouncementCreateInput, AnnouncementUpdateInput, AnnouncementTemplateOut } from "@/lib/api";
 import {
   X,
   Megaphone,
@@ -24,6 +24,7 @@ interface AnnouncementComposerModalProps {
   onSubmit: (payload: AnnouncementCreateInput | AnnouncementUpdateInput) => Promise<void>;
   announcementToEdit?: Announcement | null;
   defaultStatus?: "published" | "scheduled" | "draft";
+  initialTemplate?: AnnouncementTemplateOut | null;
 }
 
 export const AnnouncementComposerModal: React.FC<AnnouncementComposerModalProps> = ({
@@ -32,6 +33,7 @@ export const AnnouncementComposerModal: React.FC<AnnouncementComposerModalProps>
   onSubmit,
   announcementToEdit,
   defaultStatus = "published",
+  initialTemplate,
 }) => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -60,6 +62,17 @@ export const AnnouncementComposerModal: React.FC<AnnouncementComposerModalProps>
       } else {
         setScheduledFor("");
       }
+    } else if (initialTemplate) {
+      setTitle(initialTemplate.title);
+      setContent(initialTemplate.content_template);
+      setPriority((initialTemplate.priority as "normal" | "important" | "urgent") || "normal");
+      setStatus(defaultStatus);
+      setTargetAudience((initialTemplate.target_audience as "all" | "participants" | "judges" | "team_leaders") || "all");
+      setIsPinned(false);
+      const tomorrow = new Date(Date.now() + 86400000);
+      tomorrow.setHours(10, 0, 0, 0);
+      const pad = (n: number) => n.toString().padStart(2, "0");
+      setScheduledFor(`${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(tomorrow.getDate())}T10:00`);
     } else {
       setTitle("");
       setContent("");
@@ -74,7 +87,7 @@ export const AnnouncementComposerModal: React.FC<AnnouncementComposerModalProps>
       setScheduledFor(`${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(tomorrow.getDate())}T10:00`);
     }
     setError(null);
-  }, [announcementToEdit, defaultStatus, isOpen]);
+  }, [announcementToEdit, defaultStatus, isOpen, initialTemplate]);
 
   if (!isOpen) return null;
 

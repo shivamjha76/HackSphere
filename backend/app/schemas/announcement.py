@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Dict
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -65,3 +65,36 @@ class AnnouncementStatsOut(BaseModel):
     total_views: int
     published_percentage: float
     scheduled_percentage: float
+
+
+class AnnouncementTemplateOut(BaseModel):
+    id: str
+    name: str
+    category: str
+    title: str
+    content_template: str
+    priority: str
+    target_audience: str
+
+
+class ChannelDeliveryStat(BaseModel):
+    channel: str
+    delivered_count: int
+    read_rate_percentage: float
+    status: str
+
+
+class HourlyImpressionPoint(BaseModel):
+    hour_label: str
+    impressions: int
+
+
+class AnnouncementAnalyticsOut(BaseModel):
+    hackathon_id: int
+    hackathon_title: str
+    total_broadcasts: int
+    total_impressions: int
+    unique_readers_estimate: int
+    channel_delivery: List[ChannelDeliveryStat]
+    hourly_impressions: List[HourlyImpressionPoint]
+

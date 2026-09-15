@@ -10,30 +10,29 @@ import { AnnouncementStatsGrid } from "@/components/organizer/announcements/Anno
 import { AnnouncementCard } from "@/components/organizer/announcements/AnnouncementCard";
 import { AnnouncementFilterBar } from "@/components/organizer/announcements/AnnouncementFilterBar";
 import { AnnouncementComposerModal } from "@/components/organizer/announcements/AnnouncementComposerModal";
+import { AnnouncementOverviewSidebar } from "@/components/organizer/announcements/AnnouncementOverviewSidebar";
+import { AnnouncementTemplatesModal } from "@/components/organizer/announcements/AnnouncementTemplatesModal";
+import { AnnouncementAnalyticsModal } from "@/components/organizer/announcements/AnnouncementAnalyticsModal";
 import {
   Announcement,
   AnnouncementStats,
+  AnnouncementTemplateOut,
   AnnouncementCreateInput,
   AnnouncementUpdateInput,
   announcementsApi,
-  hackathonsApi,
 } from "@/lib/api";
 import {
   Megaphone,
   Radio,
-  Sparkles,
   ChevronDown,
   Layers,
-  HelpCircle,
-  Lightbulb,
   CheckCircle2,
   AlertTriangle,
   Loader2,
-  ExternalLink,
-  BookOpen,
+  ShieldCheck,
 } from "lucide-react";
 
-// Fallback announcements for instant offline / client preview
+// Fallback announcements matching Screen #30
 const FALLBACK_ANNOUNCEMENTS: Announcement[] = [
   {
     id: 1,
@@ -124,13 +123,13 @@ export default function OrganizerAnnouncementsPage() {
   const [selectedHackathon, setSelectedHackathon] = useState(AVAILABLE_HACKATHONS[0]);
   const [announcements, setAnnouncements] = useState<Announcement[]>(FALLBACK_ANNOUNCEMENTS);
   const [stats, setStats] = useState<AnnouncementStats>({
-    total_announcements: 5,
-    published_count: 4,
-    scheduled_count: 1,
-    draft_count: 0,
+    total_announcements: 18,
+    published_count: 15,
+    scheduled_count: 2,
+    draft_count: 1,
     total_views: 3451,
-    published_percentage: 80,
-    scheduled_percentage: 20,
+    published_percentage: 83,
+    scheduled_percentage: 11,
   });
 
   const [loading, setLoading] = useState(true);
@@ -138,10 +137,13 @@ export default function OrganizerAnnouncementsPage() {
   const [activeStatus, setActiveStatus] = useState<"all" | "published" | "scheduled" | "draft">("all");
   const [activePriority, setActivePriority] = useState("all");
 
-  // Modal State
+  // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"published" | "scheduled" | "draft">("published");
   const [announcementToEdit, setAnnouncementToEdit] = useState<Announcement | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<AnnouncementTemplateOut | null>(null);
+  const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
+  const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
 
   // Toast message
   const [toastMessage, setToastMessage] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
@@ -203,6 +205,7 @@ export default function OrganizerAnnouncementsPage() {
       // Refresh stats
       const newStats = await announcementsApi.getAnnouncementStats(selectedHackathon.slug);
       setStats(newStats);
+      setSelectedTemplate(null);
     } catch (err: any) {
       showToast("error", err?.message || "Failed to save announcement.");
       throw err;
@@ -242,7 +245,7 @@ export default function OrganizerAnnouncementsPage() {
   const handleBroadcastTest = (a: Announcement) => {
     showToast(
       "info",
-      `Simulated Push Alert: "${a.title}" sent to ${stats.total_views + 120} participants!`
+      `Simulated Push Alert: "${a.title}" broadcasted to ${stats.total_views + 120} participants!`
     );
   };
 
@@ -292,6 +295,11 @@ export default function OrganizerAnnouncementsPage() {
                   <span className="text-cyan-400 font-mono">ENGAGEMENT CONSOLE</span>
                   <span>/</span>
                   <span className="text-slate-300">Live Broadcast Engine</span>
+                  <span>•</span>
+                  <span className="inline-flex items-center gap-1 text-emerald-400 font-semibold">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    TechNova Labs Team (Verified Organizer)
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-3 flex-wrap">
@@ -352,13 +360,14 @@ export default function OrganizerAnnouncementsPage() {
             onPriorityChange={setActivePriority}
             onOpenCreate={(mode = "published") => {
               setAnnouncementToEdit(null);
+              setSelectedTemplate(null);
               setModalMode(mode);
               setIsModalOpen(true);
             }}
             totalCount={announcements.length}
           />
 
-          {/* Feed and Sidebar Layout */}
+          {/* Screen #30 2/3 Feed and 1/3 Sidebar Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             {/* Left: Announcements Feed List (2 Columns) */}
             <div className="lg:col-span-2 space-y-4">
@@ -377,6 +386,7 @@ export default function OrganizerAnnouncementsPage() {
                     type="button"
                     onClick={() => {
                       setAnnouncementToEdit(null);
+                      setSelectedTemplate(null);
                       setModalMode("published");
                       setIsModalOpen(true);
                     }}
@@ -386,114 +396,93 @@ export default function OrganizerAnnouncementsPage() {
                   </button>
                 </div>
               ) : (
-                announcements.map((a) => (
-                  <AnnouncementCard
-                    key={a.id}
-                    announcement={a}
-                    onTogglePin={handleTogglePin}
-                    onEdit={(item) => {
-                      setAnnouncementToEdit(item);
-                      setIsModalOpen(true);
-                    }}
-                    onDelete={handleDelete}
-                    onBroadcastTest={handleBroadcastTest}
-                  />
-                ))
+                <>
+                  {announcements.map((a) => (
+                    <AnnouncementCard
+                      key={a.id}
+                      announcement={a}
+                      onTogglePin={handleTogglePin}
+                      onEdit={(item) => {
+                        setAnnouncementToEdit(item);
+                        setSelectedTemplate(null);
+                        setIsModalOpen(true);
+                      }}
+                      onDelete={handleDelete}
+                      onBroadcastTest={handleBroadcastTest}
+                    />
+                  ))}
+
+                  {/* Screen #30 Pagination Bar */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400">
+                    <div>
+                      Showing <span className="font-semibold text-white">1</span> to{" "}
+                      <span className="font-semibold text-white">{announcements.length}</span> of{" "}
+                      <span className="font-semibold text-white">{stats.total_announcements || 18}</span> announcements
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled
+                        className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-500 font-medium cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+                      <button
+                        type="button"
+                        className="w-8 h-8 rounded-lg bg-cyan-600 text-white font-bold flex items-center justify-center shadow-xs"
+                      >
+                        1
+                      </button>
+                      <button
+                        type="button"
+                        className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition-colors cursor-pointer"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
 
-            {/* Right: Quick Actions & Pro Tips matching Screen #30 */}
+            {/* Right: Screen #30 Announcement Overview Sidebar */}
             <div className="space-y-4">
-              {/* Quick Actions Card */}
-              <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-5 backdrop-blur-md shadow-md space-y-4">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Quick Actions</span>
-                </h4>
-
-                <div className="space-y-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAnnouncementToEdit(null);
-                      setModalMode("published");
-                      setIsModalOpen(true);
-                    }}
-                    className="w-full text-left px-3.5 py-2.5 rounded-xl border border-white/5 bg-slate-950/40 hover:bg-white/5 hover:border-cyan-500/30 text-xs font-semibold text-slate-200 transition-all flex items-center justify-between cursor-pointer group"
-                  >
-                    <span>New Announcement</span>
-                    <span className="text-cyan-400 group-hover:translate-x-0.5 transition-transform">→</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAnnouncementToEdit(null);
-                      setModalMode("scheduled");
-                      setIsModalOpen(true);
-                    }}
-                    className="w-full text-left px-3.5 py-2.5 rounded-xl border border-white/5 bg-slate-950/40 hover:bg-white/5 hover:border-sky-500/30 text-xs font-semibold text-slate-200 transition-all flex items-center justify-between cursor-pointer group"
-                  >
-                    <span>Schedule Announcement</span>
-                    <span className="text-sky-400 group-hover:translate-x-0.5 transition-transform">→</span>
-                  </button>
-
-                  <Link
-                    href={`/hackathons/${selectedHackathon.slug}`}
-                    target="_blank"
-                    className="w-full text-left px-3.5 py-2.5 rounded-xl border border-white/5 bg-slate-950/40 hover:bg-white/5 hover:border-emerald-500/30 text-xs font-semibold text-slate-200 transition-all flex items-center justify-between cursor-pointer group"
-                  >
-                    <span>View Public Hacker Portal</span>
-                    <ExternalLink className="w-3.5 h-3.5 text-emerald-400 group-hover:translate-x-0.5 transition-transform" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* Pro Tips Box matching Screen #30 */}
-              <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-950/20 to-slate-900 p-5 backdrop-blur-md shadow-md space-y-3">
-                <div className="flex items-center gap-2 text-amber-300">
-                  <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
-                  <h4 className="text-xs font-bold uppercase tracking-wider">
-                    Organizer Pro Tips
-                  </h4>
-                </div>
-
-                <ul className="space-y-2 text-xs text-slate-300 leading-relaxed list-disc list-inside">
-                  <li>
-                    <strong className="text-white">Pin important updates:</strong> Floating critical timeline changes or submission freeze warnings ensures no hacker misses them.
-                  </li>
-                  <li>
-                    <strong className="text-white">Concise titles:</strong> Keep titles under 60 characters for high readability on participant mobile feeds.
-                  </li>
-                  <li>
-                    <strong className="text-white">Schedule ahead:</strong> Pre-schedule judging start notifications and code freeze countdown alerts.
-                  </li>
-                </ul>
-              </div>
-
-              {/* Need Help Box */}
-              <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-5 space-y-3">
-                <div className="flex items-center gap-2 text-slate-300">
-                  <HelpCircle className="w-4 h-4 text-blue-400 shrink-0" />
-                  <h4 className="text-xs font-bold uppercase tracking-wider">Need Assistance?</h4>
-                </div>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Have questions about broadcast audience segmentation or automated SMS/email integrations? Check our organizer guide.
-                </p>
-                <div className="pt-1">
-                  <Link
-                    href="/explore"
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
-                  >
-                    <BookOpen className="w-3.5 h-3.5" />
-                    <span>Organizer Guide & Docs</span>
-                  </Link>
-                </div>
-              </div>
+              <AnnouncementOverviewSidebar
+                stats={stats}
+                onOpenCreate={(mode = "published") => {
+                  setAnnouncementToEdit(null);
+                  setSelectedTemplate(null);
+                  setModalMode(mode);
+                  setIsModalOpen(true);
+                }}
+                onOpenTemplates={() => setIsTemplatesModalOpen(true)}
+                onOpenAnalytics={() => setIsAnalyticsModalOpen(true)}
+              />
             </div>
           </div>
         </main>
       </div>
+
+      {/* Templates Modal */}
+      {isTemplatesModalOpen && (
+        <AnnouncementTemplatesModal
+          onClose={() => setIsTemplatesModalOpen(false)}
+          onSelectTemplate={(tpl) => {
+            setSelectedTemplate(tpl);
+            setAnnouncementToEdit(null);
+            setIsTemplatesModalOpen(false);
+            setIsModalOpen(true);
+          }}
+        />
+      )}
+
+      {/* Analytics Modal */}
+      {isAnalyticsModalOpen && (
+        <AnnouncementAnalyticsModal
+          hackathonSlug={selectedHackathon.slug}
+          onClose={() => setIsAnalyticsModalOpen(false)}
+        />
+      )}
 
       {/* Composer Modal */}
       <AnnouncementComposerModal
@@ -501,10 +490,12 @@ export default function OrganizerAnnouncementsPage() {
         onClose={() => {
           setIsModalOpen(false);
           setAnnouncementToEdit(null);
+          setSelectedTemplate(null);
         }}
         onSubmit={handleCreateOrUpdate}
         announcementToEdit={announcementToEdit}
         defaultStatus={modalMode}
+        initialTemplate={selectedTemplate}
       />
 
       {/* Auth Modal */}

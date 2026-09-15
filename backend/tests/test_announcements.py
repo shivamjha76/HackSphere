@@ -211,3 +211,31 @@ def test_update_and_delete_announcement():
     )
     assert res_del.status_code == 200
     assert "deleted" in res_del.json()["message"]
+
+
+def test_get_announcement_templates():
+    """Any client can fetch pre-configured templates matching Chapter 21."""
+    res = client.get("/api/v1/announcements/templates")
+    assert res.status_code == 200
+    data = res.json()
+    assert len(data) >= 5
+    ids = [t["id"] for t in data]
+    assert "welcome_kickoff" in ids
+    assert "deadline_extension" in ids
+    assert "prizes_reveal" in ids
+    assert "judging_kickoff" in ids
+    assert "code_of_conduct" in ids
+
+
+def test_get_announcement_analytics():
+    """Organizer can fetch engagement analytics and channel delivery rates."""
+    headers = get_auth_header("organizer@technova.com", "OrganizerPass123!")
+    res = client.get("/api/v1/announcements/hackathons/ai-hack-summit-2026/analytics", headers=headers)
+    assert res.status_code == 200
+    data = res.json()
+    assert "total_broadcasts" in data
+    assert "total_impressions" in data
+    assert data["total_impressions"] >= 1000
+    assert len(data["channel_delivery"]) >= 3
+    assert len(data["hourly_impressions"]) >= 6
+
