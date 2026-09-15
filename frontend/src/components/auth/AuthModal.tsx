@@ -228,7 +228,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               variant="outline"
               size="sm"
               className="text-xs h-8 justify-start"
-              onClick={() => handleQuickLogin("organizer@technova.com", "OrganizerPass123!")}
+              onClick={() => handleQuickLogin("organizer@technova.com", "OrgPass123!")}
               disabled={isLoading}
             >
               <UserCheck className="w-3.5 h-3.5 text-indigo-600 mr-1.5" />
