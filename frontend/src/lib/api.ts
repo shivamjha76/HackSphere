@@ -2177,6 +2177,175 @@ export const organizerCertificatesApi = {
   },
 };
 
+// ==========================================
+// SuperAdmin Global Platform Governance (Screen #24)
+// ==========================================
+
+export interface AdminMetricCardOut {
+  key: string;
+  title: string;
+  value: string;
+  delta_percent: number;
+  is_positive: boolean;
+  delta_label: string;
+  icon: string;
+}
+
+export interface PlatformDailyPointOut {
+  date_label: string;
+  users_count: number;
+  hackathons_count: number;
+}
+
+export interface RoleDistributionItemOut {
+  role_name: string;
+  count: number;
+  percentage: number;
+  color: string;
+}
+
+export interface AdminActivityItemOut {
+  id: number;
+  action: string;
+  title: string;
+  details?: string | null;
+  timestamp_human: string;
+  created_at?: string | null;
+  category: string;
+}
+
+export interface AdminRecentOrgOut {
+  id: number;
+  name: string;
+  slug: string;
+  official_email?: string | null;
+  members_count: number;
+  hackathons_count: number;
+  status: string;
+  is_verified: boolean;
+  created_at_human: string;
+}
+
+export interface AdminOngoingHackathonOut {
+  id: number;
+  title: string;
+  slug: string;
+  date_range: string;
+  status: string;
+  teams_count: number;
+  participants_count: number;
+  mode: string;
+}
+
+export interface AdminPendingQueueItemOut {
+  id: number;
+  category: string;
+  title: string;
+  requested_by: string;
+  details: string;
+  date_human: string;
+  status: string;
+}
+
+export interface AdminPendingActionsOut {
+  orgs_awaiting_approval_count: number;
+  hackathons_approval_count: number;
+  reported_issues_count: number;
+  judge_applications_count: number;
+  items: AdminPendingQueueItemOut[];
+}
+
+export interface AdminPlatformHealthOut {
+  latency_ms: number;
+  uptime_percent: number;
+  status_message: string;
+  core_api_status: string;
+  database_status: string;
+  cache_status: string;
+  storage_status: string;
+}
+
+export interface SuperAdminDashboardOut {
+  stats: AdminMetricCardOut[];
+  daily_metrics: PlatformDailyPointOut[];
+  total_7d_activity: number;
+  total_7d_delta: number;
+  role_distribution: RoleDistributionItemOut[];
+  total_users_count: number;
+  recent_activities: AdminActivityItemOut[];
+  recent_organizations: AdminRecentOrgOut[];
+  ongoing_hackathons: AdminOngoingHackathonOut[];
+  pending_actions: AdminPendingActionsOut;
+  platform_health: AdminPlatformHealthOut;
+}
+
+export interface ApproveOrganizationIn {
+  is_verified: boolean;
+  notes?: string | null;
+}
+
+export interface ApproveHackathonIn {
+  status: string;
+  notes?: string | null;
+}
+
+export interface ResolveReportedIssueIn {
+  status: string;
+  resolution_notes: string;
+}
+
+export interface UpdateUserStatusIn {
+  is_active: boolean;
+  reason?: string | null;
+}
+
+export const adminApi = {
+  getDashboard: async (): Promise<SuperAdminDashboardOut> => {
+    return apiFetch<SuperAdminDashboardOut>("/admin/dashboard");
+  },
+  getPendingActions: async (category?: string): Promise<AdminPendingActionsOut> => {
+    const qs = category ? `?category=${encodeURIComponent(category)}` : "";
+    return apiFetch<AdminPendingActionsOut>(`/admin/pending-actions${qs}`);
+  },
+  verifyOrganization: async (
+    orgId: number,
+    payload: ApproveOrganizationIn
+  ): Promise<{ success: boolean; message: string }> => {
+    return apiFetch<{ success: boolean; message: string }>(`/admin/organizations/${orgId}/verify`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  approveHackathon: async (
+    hackathonId: number,
+    payload: ApproveHackathonIn
+  ): Promise<{ success: boolean; message: string }> => {
+    return apiFetch<{ success: boolean; message: string }>(`/admin/hackathons/${hackathonId}/approve`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  resolveReport: async (
+    reportId: number,
+    payload: ResolveReportedIssueIn
+  ): Promise<{ success: boolean; message: string }> => {
+    return apiFetch<{ success: boolean; message: string }>(`/admin/reports/${reportId}/resolve`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  updateUserStatus: async (
+    userId: number,
+    payload: UpdateUserStatusIn
+  ): Promise<{ success: boolean; message: string }> => {
+    return apiFetch<{ success: boolean; message: string }>(`/admin/users/${userId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  },
+};
+
+
 
 
 

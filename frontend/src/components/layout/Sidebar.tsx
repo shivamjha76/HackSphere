@@ -185,6 +185,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           } else if (item.id === "leaderboards") {
                             router.push("/judge/leaderboards");
                           }
+                        } else if (currentRole === "super_admin") {
+                          if (item.id === "dashboard") router.push("/admin");
+                          else if (item.id === "users") router.push("/admin?tab=users");
+                          else if (item.id === "organizations") router.push("/admin?tab=organizations");
+                          else if (item.id === "all-hackathons") router.push("/admin?tab=hackathons");
+                          else if (item.id === "security") router.push("/admin?tab=moderation");
+                          else if (item.id === "audit-logs") router.push("/admin?tab=activity");
+                          else router.push("/admin");
                         } else {
                           if (item.id === "dashboard") router.push("/dashboard");
                           else if (item.id === "explore") router.push("/explore");

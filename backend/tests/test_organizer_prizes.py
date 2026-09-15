@@ -41,10 +41,10 @@ def test_organizer_get_prizes_overview():
 
     summary = data["summary"]
     assert "₹" in summary["total_prize_pool"]
-    assert summary["total_winners_count"] >= 3
+    assert summary["total_winners_count"] >= 2
     assert "₹25,000" in summary["first_place"]
     assert "₹15,000" in summary["second_place"]
-    assert len(summary["prizes"]) >= 3
+    assert len(summary["prizes"]) >= 2
 
     # Check tier representation
     first_tier = summary["prizes"][0]

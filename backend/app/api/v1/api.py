@@ -19,6 +19,7 @@ from app.api.v1.endpoints import (
     organizer_teams,
     organizer_prizes,
     organizer_certificates,
+    admin,
 )
 
 api_router = APIRouter()
@@ -43,3 +44,5 @@ api_router.include_router(announcements.router, prefix="/announcements", tags=["
 api_router.include_router(winners.router, prefix="/winners", tags=["Winners & Podium"])
 api_router.include_router(judge.router, prefix="/judge", tags=["Judge Portal"])
 api_router.include_router(reports.router, prefix="/reports", tags=["Organizer Reports & Analytics"])
+api_router.include_router(admin.router, prefix="/admin", tags=["SuperAdmin Governance & Moderation"])
+

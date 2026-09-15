@@ -16,6 +16,7 @@ from app.models.certificate import Certificate
 from app.models.certificate_template import CertificateTemplate
 from app.models.announcement import Announcement
 from app.models.winner import HackathonWinner
+from app.models.moderation import ModerationReport
 
 __all__ = [
     "Base",
@@ -40,4 +41,5 @@ __all__ = [
     "CertificateTemplate",
     "Announcement",
     "HackathonWinner",
+    "ModerationReport",
 ]
