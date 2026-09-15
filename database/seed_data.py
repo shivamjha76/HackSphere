@@ -27,6 +27,7 @@ from app.models import (
     Evaluation,
     EvaluationScore,
     Certificate,
+    CertificateTemplate,
     Announcement,
     HackathonWinner,
 )
@@ -66,6 +67,18 @@ def ensure_sqlite_columns(eng):
             for col_name, col_type in winner_cols_to_add:
                 if col_name not in existing_winner_cols:
                     conn.execute(text(f"ALTER TABLE hackathon_winners ADD COLUMN {col_name} {col_type}"))
+
+            res_certs = conn.execute(text("PRAGMA table_info(certificates)"))
+            existing_cert_cols = {row[1] for row in res_certs.fetchall()}
+            cert_cols_to_add = [
+                ("team_position", "VARCHAR(100)"),
+                ("member_count", "INTEGER DEFAULT 1"),
+                ("status", "VARCHAR(50) DEFAULT 'issued'"),
+                ("template_id", "INTEGER"),
+            ]
+            for col_name, col_type in cert_cols_to_add:
+                if col_name not in existing_cert_cols:
+                    conn.execute(text(f"ALTER TABLE certificates ADD COLUMN {col_name} {col_type}"))
 
             conn.commit()
     except Exception as e:
@@ -865,23 +878,138 @@ def seed_database():
         db.flush()
         print("[+] Verified Judge evaluation & rubric scores (Score: 91/100 by Judge Rohan Mehta).")
 
-        # 10. Seed Verifiable Certificate
-        cert = db.query(Certificate).filter_by(certificate_code="HS-2026-WINNER-001").first()
-        if not cert:
-            cert = Certificate(
-                certificate_code="HS-2026-WINNER-001",
-                hackathon_id=ai_hack.id,
-                user_id=users["shivam@example.com"].id,
-                team_id=team_codecrafters.id,
-                certificate_type="winner",
-                title="1st Place Winner - AI Hack Summit 2026",
-                recipient_name="Shivam Jha",
-                qr_verification_url="https://hacksphere.dev/verify/HS-2026-WINNER-001",
-                is_valid=True,
-            )
-            db.add(cert)
-            db.flush()
-        print("[+] Verified tamper-proof certificate: HS-2026-WINNER-001.")
+        # 10. Seed Certificate Templates and Verifiable Issued Credentials matching Screen #53 & Chapter 24
+        templates_seed = [
+            {
+                "name": "Winner Certificate Template",
+                "template_type": "winner",
+                "description": "Default Certificate for 1st, 2nd, 3rd place winners.",
+                "target_audience": "Winners (1st, 2nd, 3rd Place)",
+                "title_text": "Certificate of Excellence",
+                "subtitle_text": "In recognition of outstanding technical innovation, architectural resilience, and podium finish.",
+                "issuer_name": "TechNova Labs Organizing Committee",
+                "signatory_name": "Dr. Sarah Jenkins",
+                "signatory_title": "Lead Judge & Director of AI",
+                "badge_text": "CERTIFICATE",
+                "theme": "gold",
+            },
+            {
+                "name": "Special Mentions Certificate",
+                "template_type": "special_mention",
+                "description": "Recognizes distinguished innovation, UX excellence, or community impact.",
+                "target_audience": "Special Mentions (Goodies & Swag, 4 Teams)",
+                "title_text": "Certificate of Distinction",
+                "subtitle_text": "Awarded for exceptional creativity, execution, and honorable mention.",
+                "issuer_name": "TechNova Labs Organizing Committee",
+                "signatory_name": "Rohan Mehta",
+                "signatory_title": "Principal AI Architect & Judge",
+                "badge_text": "DISTINCTION",
+                "theme": "emerald",
+            },
+            {
+                "name": "Participation Certificate",
+                "template_type": "participation",
+                "description": "Standard verifiable credential awarded to all verified active project submitters.",
+                "target_audience": "All Active Hackers (324 Participants)",
+                "title_text": "Certificate of Participation",
+                "subtitle_text": "In recognition of active participation, collaboration, and hackathon project delivery.",
+                "issuer_name": "TechNova Labs Organizing Committee",
+                "signatory_name": "Priya Sharma",
+                "signatory_title": "Operations Director, TechNova Labs",
+                "badge_text": "PARTICIPANT",
+                "theme": "blue",
+            },
+        ]
+
+        templates_map = {}
+        for t_data in templates_seed:
+            t_obj = db.query(CertificateTemplate).filter_by(
+                hackathon_id=ai_hack.id, name=t_data["name"]
+            ).first()
+            if not t_obj:
+                t_obj = CertificateTemplate(hackathon_id=ai_hack.id, **t_data)
+                db.add(t_obj)
+                db.flush()
+            templates_map[t_data["name"]] = t_obj
+        print(f"[+] Seeded {len(templates_map)} Certificate Templates for AI Hack Summit 2026.")
+
+        # Seed the 4 Screen #53 Issued Certificates
+        certs_seed = [
+            {
+                "certificate_code": "HS-2026-WINNER-001",
+                "user_id": users["shivam@example.com"].id,
+                "team_id": team_codecrafters.id,
+                "template_id": templates_map["Winner Certificate Template"].id,
+                "certificate_type": "winner",
+                "title": "Winner Certificate",
+                "recipient_name": "Shivam Jha",
+                "team_position": "1st Place",
+                "member_count": 5,
+                "status": "issued",
+                "issue_date": datetime(2025, 5, 20, 10, 30, tzinfo=timezone.utc),
+                "qr_verification_url": "https://hacksphere.dev/verify/HS-2026-WINNER-001",
+                "is_valid": True,
+            },
+            {
+                "certificate_code": "HS-2026-WINNER-002",
+                "user_id": users["aman@example.com"].id,
+                "team_id": team_bytebuilders.id,
+                "template_id": templates_map["Winner Certificate Template"].id,
+                "certificate_type": "winner",
+                "title": "Winner Certificate",
+                "recipient_name": "Aman Gupta",
+                "team_position": "2nd Place",
+                "member_count": 3,
+                "status": "issued",
+                "issue_date": datetime(2025, 5, 20, 9, 15, tzinfo=timezone.utc),
+                "qr_verification_url": "https://hacksphere.dev/verify/HS-2026-WINNER-002",
+                "is_valid": True,
+            },
+            {
+                "certificate_code": "HS-2026-WINNER-003",
+                "user_id": users["rahul@example.com"].id,
+                "team_id": team_devdynamos.id,
+                "template_id": templates_map["Winner Certificate Template"].id,
+                "certificate_type": "winner",
+                "title": "Winner Certificate",
+                "recipient_name": "Rahul Sharma",
+                "team_position": "3rd Place",
+                "member_count": 4,
+                "status": "issued",
+                "issue_date": datetime(2025, 5, 19, 23, 45, tzinfo=timezone.utc),
+                "qr_verification_url": "https://hacksphere.dev/verify/HS-2026-WINNER-003",
+                "is_valid": True,
+            },
+            {
+                "certificate_code": "HS-2026-SPECIAL-004",
+                "user_id": users["arjun@example.com"].id,
+                "team_id": team_pixel.id,
+                "template_id": templates_map["Special Mentions Certificate"].id,
+                "certificate_type": "special_mention",
+                "title": "Special Mention Certificate",
+                "recipient_name": "Arjun Verma",
+                "team_position": "Goodies & Swag",
+                "member_count": 4,
+                "status": "issued",
+                "issue_date": datetime(2025, 5, 19, 20, 20, tzinfo=timezone.utc),
+                "qr_verification_url": "https://hacksphere.dev/verify/HS-2026-SPECIAL-004",
+                "is_valid": True,
+            },
+        ]
+
+        for c_data in certs_seed:
+            existing_c = db.query(Certificate).filter_by(
+                certificate_code=c_data["certificate_code"]
+            ).first()
+            if not existing_c:
+                c_obj = Certificate(hackathon_id=ai_hack.id, **c_data)
+                db.add(c_obj)
+            else:
+                # Update attributes to match Screen #53
+                for k, v in c_data.items():
+                    setattr(existing_c, k, v)
+        db.flush()
+        print("[+] Verified 4 Screen #53 issued certificates (CodeCrafters: 1st, ByteBuilders: 2nd, DevDynamos: 3rd, PixelPioneers: Goodies).")
 
         # 11. Seed Announcements matching Screen #30
         announcements_data = [

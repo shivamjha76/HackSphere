@@ -13,6 +13,7 @@ from app.models.judging import (
     EvaluationScore,
 )
 from app.models.certificate import Certificate
+from app.models.certificate_template import CertificateTemplate
 from app.models.announcement import Announcement
 from app.models.winner import HackathonWinner
 
@@ -36,6 +37,7 @@ __all__ = [
     "Evaluation",
     "EvaluationScore",
     "Certificate",
+    "CertificateTemplate",
     "Announcement",
     "HackathonWinner",
 ]

@@ -1995,6 +1995,185 @@ export const organizerPrizesApi = {
   },
 };
 
+// ==========================================
+// 17. ORGANIZER VERIFIABLE CERTIFICATES (SCREEN #53 & CHAPTER 24)
+// ==========================================
+
+export interface CertificateTemplateOut {
+  id: number;
+  hackathon_id: number;
+  name: string;
+  template_type: string;
+  description: string;
+  target_audience: string;
+  title_text: string;
+  subtitle_text?: string | null;
+  issuer_name: string;
+  signatory_name: string;
+  signatory_title: string;
+  badge_text: string;
+  theme: string;
+  is_default: boolean;
+  is_active: boolean;
+  updated_at?: string | null;
+  created_at?: string | null;
+}
+
+export interface CertificateTemplateCreate {
+  hackathon_slug?: string;
+  hackathon_id?: number;
+  name: string;
+  template_type?: string;
+  description: string;
+  target_audience?: string;
+  title_text?: string;
+  subtitle_text?: string;
+  issuer_name?: string;
+  signatory_name?: string;
+  signatory_title?: string;
+  badge_text?: string;
+  theme?: string;
+}
+
+export interface CertificateTemplateUpdate {
+  name?: string;
+  template_type?: string;
+  description?: string;
+  target_audience?: string;
+  title_text?: string;
+  subtitle_text?: string;
+  issuer_name?: string;
+  signatory_name?: string;
+  signatory_title?: string;
+  badge_text?: string;
+  theme?: string;
+  is_active?: boolean;
+}
+
+export interface OrganizerCertificateItemOut {
+  id: number;
+  certificate_code: string;
+  hackathon_id: number;
+  hackathon_title: string;
+  recipient_name: string;
+  team_id?: number | null;
+  team_name?: string | null;
+  team_position?: string | null;
+  member_count: number;
+  certificate_type: string;
+  title: string;
+  status: string;
+  issue_date: string;
+  qr_verification_url: string;
+  pdf_url?: string | null;
+  is_valid: boolean;
+  template_id?: number | null;
+  template_name?: string | null;
+}
+
+export interface OrganizerCertificatesSummaryOut {
+  total_certificates: number;
+  issued_count: number;
+  pending_count: number;
+  issued_percentage: string;
+}
+
+export interface OrganizerCertificatesDashboardOut {
+  hackathon_id: number;
+  hackathon_title: string;
+  hackathon_slug: string;
+  summary: OrganizerCertificatesSummaryOut;
+  templates: CertificateTemplateOut[];
+  certificates: OrganizerCertificateItemOut[];
+}
+
+export interface BulkCertificateActionPayload {
+  hackathon_slug?: string;
+  hackathon_id?: number;
+  target?: string;
+  template_id?: number;
+}
+
+export interface BulkCertificateActionResult {
+  success: boolean;
+  issued_count: number;
+  skipped_count: number;
+  message: string;
+}
+
+export interface EmailCertificatesPayload {
+  hackathon_slug?: string;
+  hackathon_id?: number;
+  subject?: string;
+  custom_message?: string;
+  certificate_ids?: number[];
+}
+
+export interface EmailCertificatesResult {
+  success: boolean;
+  sent_count: number;
+  message: string;
+}
+
+export const organizerCertificatesApi = {
+  getCertificatesDashboard: async (params?: {
+    hackathon_slug?: string;
+    hackathon_id?: number;
+  }): Promise<OrganizerCertificatesDashboardOut> => {
+    const query = new URLSearchParams();
+    if (params?.hackathon_slug) query.set("hackathon_slug", params.hackathon_slug);
+    if (params?.hackathon_id) query.set("hackathon_id", params.hackathon_id.toString());
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return apiFetch<OrganizerCertificatesDashboardOut>(`/organizer/certificates${qs}`);
+  },
+
+  createTemplate: async (payload: CertificateTemplateCreate): Promise<CertificateTemplateOut> => {
+    return apiFetch<CertificateTemplateOut>("/organizer/certificates/templates", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateTemplate: async (
+    templateId: number,
+    payload: CertificateTemplateUpdate
+  ): Promise<CertificateTemplateOut> => {
+    return apiFetch<CertificateTemplateOut>(`/organizer/certificates/templates/${templateId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  reissueCertificate: async (certificateId: number): Promise<OrganizerCertificateItemOut> => {
+    return apiFetch<OrganizerCertificateItemOut>(`/organizer/certificates/${certificateId}/reissue`, {
+      method: "POST",
+    });
+  },
+
+  bulkIssueCertificates: async (payload: BulkCertificateActionPayload): Promise<BulkCertificateActionResult> => {
+    return apiFetch<BulkCertificateActionResult>("/organizer/certificates/bulk-issue", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  emailCertificates: async (payload: EmailCertificatesPayload): Promise<EmailCertificatesResult> => {
+    return apiFetch<EmailCertificatesResult>("/organizer/certificates/email-dispatch", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getDownloadManifestUrl: (params?: { hackathon_slug?: string; hackathon_id?: number }): string => {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+    const query = new URLSearchParams();
+    if (params?.hackathon_slug) query.set("hackathon_slug", params.hackathon_slug);
+    if (params?.hackathon_id) query.set("hackathon_id", params.hackathon_id.toString());
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return `${apiBase}/organizer/certificates/download-all${qs}`;
+  },
+};
+
 
 
 

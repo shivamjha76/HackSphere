@@ -8,7 +8,7 @@ from app.db.base_class import Base, TimestampMixin
 class Certificate(Base, TimestampMixin):
     """
     Automated certificates issued to participants, winners, and judges.
-    Contains unique verification code and public validation link.
+    Contains unique verification code and public validation link per Roadmap Chapter 24.
     """
     __tablename__ = "certificates"
 
@@ -25,11 +25,17 @@ class Certificate(Base, TimestampMixin):
     team_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("teams.id", ondelete="SET NULL"), nullable=True
     )
+    template_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("certificate_templates.id", ondelete="SET NULL"), nullable=True
+    )
     certificate_type: Mapped[str] = mapped_column(
         String(50), default="participation", nullable=False
     )
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     recipient_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    team_position: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    member_count: Mapped[Optional[int]] = mapped_column(Integer, default=1, nullable=True)
+    status: Mapped[str] = mapped_column(String(50), default="issued", nullable=False)
     issue_date: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -43,3 +49,6 @@ class Certificate(Base, TimestampMixin):
     hackathon: Mapped["Hackathon"] = relationship("Hackathon", back_populates="certificates")
     user: Mapped["User"] = relationship("User", back_populates="certificates")
     team: Mapped[Optional["Team"]] = relationship("Team")
+    template: Mapped[Optional["CertificateTemplate"]] = relationship(
+        "CertificateTemplate", back_populates="certificates"
+    )
